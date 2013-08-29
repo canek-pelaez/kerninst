@@ -123,8 +123,17 @@ EXEC_NAME=$(/usr/bin/basename "$0")
 
 for ARG in "$@"; do
     case "${ARG}" in
-        --no-modules)
+        --modules-rebuild)
+            MODULES_REBUILD="yes"
+            ;;
+        --no-modules-rebuild)
             MODULES_REBUILD="no"
+            ;;
+        --update-kernel-config)
+            UPDATE_KERNEL_CONFIG="yes"
+            ;;
+        --no-update-kernel-config)
+            UPDATE_KERNEL_CONFIG="no"
             ;;
     esac
 done
