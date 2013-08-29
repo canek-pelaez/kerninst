@@ -99,7 +99,7 @@ EOF
         einfo "Added ${KERNEL} kernel."
 
         if [ -f "/boot/initrd-${KERNEL_VERSION}" ]; then
-            echo "initrd /boot/initrd-${KERNEL_VERSION}" > /boot/grub/grub.conf || die
+            echo "initrd /boot/initrd-${KERNEL_VERSION}" >> /boot/grub/grub.conf || die
             einfo "Added /boot/initrd-${KERNEL_VERSION} initramfs."
         fi
     done
