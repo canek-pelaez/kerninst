@@ -84,7 +84,7 @@ function update_grub2() {
 
 function update_grub() {
     einfo "Generating /boot/grub/grub.conf..."
-    KERNELS=$(find /boot -name "vmlinuz*" | sort -r)
+    KERNELS=$(find /boot -name "vmlinuz*" | sort -r -V)
 
     echo "${GRUB_HEADER}" > /boot/grub/grub.conf || die
 
@@ -98,9 +98,11 @@ EOF
 
         einfo "Added ${KERNEL} kernel."
 
-        if [ -f "/boot/initrd-${KERNEL_VERSION}" ]; then
-            echo "initrd /boot/initrd-${KERNEL_VERSION}" >> /boot/grub/grub.conf || die
-            einfo "Added /boot/initrd-${KERNEL_VERSION} initramfs."
+        KV=$(echo ${KERNEL} | sed "s@/boot/vmlinuz-@@g")
+
+        if [ -f "/boot/initrd-${KV}" ]; then
+            echo "initrd /boot/initrd-${KV}" >> /boot/grub/grub.conf || die
+            einfo "Added /boot/initrd-${KV} initramfs."
         fi
     done
 }
