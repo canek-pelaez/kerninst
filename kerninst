@@ -89,16 +89,16 @@ function update_grub() {
     echo "${GRUB_HEADER}" > /boot/grub/grub.conf || die
 
     for KERNEL in ${KERNELS}; do
+        KV=$(echo ${KERNEL} | sed "s@/boot/vmlinuz-@@g")
+
         cat << EOF >> /boot/grub/grub.conf
 
-title ${GRUB_KERNEL_TITLE} (kernel ${KERNEL_VERSION})
+title ${GRUB_KERNEL_TITLE} (kernel ${KV})
 root ${GRUB_ROOT_PARTITION}
 kernel ${KERNEL} root=${ROOT_PARTITION} init=${INIT} ${INIT_OPTIONS}
 EOF
 
         einfo "Added ${KERNEL} kernel."
-
-        KV=$(echo ${KERNEL} | sed "s@/boot/vmlinuz-@@g")
 
         if [ -f "/boot/initrd-${KV}" ]; then
             echo "initrd /boot/initrd-${KV}" >> /boot/grub/grub.conf || die
