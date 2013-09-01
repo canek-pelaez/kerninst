@@ -14,7 +14,7 @@ fi
 
 KERNEL_DIR=$(readlink /usr/src/linux)
 
-if [ ! -d "/usr/src/${KERNEL_DIR}" -o ! -f "/usr/src/${KERNEL_DIR}/Makefile" ]; then
+if [ ! -d "/usr/src/${KERNEL_DIR}" ] || [ ! -f "/usr/src/${KERNEL_DIR}/Makefile" ]; then
     if [ ! grep -q KBUILD "/usr/src/${KERNEL_DIR}/Makefile" ]; then
         eerror "The file /usr/src/${KERNEL_DIR} is not a valid kernel directory."
         exit 1
@@ -22,6 +22,11 @@ if [ ! -d "/usr/src/${KERNEL_DIR}" -o ! -f "/usr/src/${KERNEL_DIR}/Makefile" ]; 
 fi
 
 KERNEL_VERSION=$(readlink /usr/src/linux | sed "s/^linux-//g")
+
+if [ ${KERNEL_VERSION} == "" ] || [[ ${KERNEL_VERSION} =~ \ |\' ]]; then
+    eerror "The version ${KERNEL_VERSION} is not a valid kernel version."
+    exit 1
+fi
 
 function die() {
     eerror "An error ocurred. Exiting."
