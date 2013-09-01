@@ -8,7 +8,7 @@ LOGFILE=/var/log/kerninst.log
 /bin/rm -f "${LOGFILE}"
 
 if [ ! -L /usr/src/linux ]; then
-    eerror "The symbolic link /usr/src/linux does not exits."
+    eerror "The symbolic link /usr/src/linux does not exists."
     exit 1
 fi
 
