@@ -71,7 +71,7 @@ function make_initrd() {
     fi
 
     einfo "Creating initrd for kernel version ${KERNEL_VERSION}..."
-    if [ "${INCLUDES}" != "" || "${INCLUDE_FIRMWARE}" == "yes" ]; then
+    if [ "${INCLUDES}" != "" ] || [ "${INCLUDE_FIRMWARE}" == "yes" ]; then
         INCLUDED="-I"
 
         for i in $(find /lib64/firmware -type f); do
