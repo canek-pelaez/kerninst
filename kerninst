@@ -90,7 +90,7 @@ function make_initrd() {
 }
 
 function update_grub2() {
-    /usr/sbin/grub2-mkconfig -o /boot/grub2/grub.cfg &>> "${LOGFILE}" || die
+    /usr/sbin/grub2-mkconfig -o "${GRUB2_CONFIG_FILE}" &>> "${LOGFILE}" || die
 }
 
 function update_grub() {
