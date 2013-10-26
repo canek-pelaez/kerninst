@@ -93,45 +93,9 @@ function update_grub2() {
     /usr/sbin/grub2-mkconfig -o "${GRUB2_CONFIG_FILE}" &>> "${LOGFILE}" || die
 }
 
-function update_grub() {
-    einfo "Generating /boot/grub/grub.conf..."
-    KERNELS=$(find /boot -name "vmlinuz*" | sort -r -V)
-
-    echo "${GRUB_HEADER}" > /boot/grub/grub.conf || die
-
-    for KERNEL in ${KERNELS}; do
-        KV=$(echo ${KERNEL} | sed "s@/boot/vmlinuz-@@g")
-
-        cat << EOF >> /boot/grub/grub.conf || die
-
-title ${GRUB_KERNEL_TITLE} (kernel ${KV})
-root ${GRUB_ROOT_PARTITION}
-kernel ${KERNEL} root=${ROOT_PARTITION} init=${INIT} ${INIT_OPTIONS}
-EOF
-
-        einfo "Added ${KERNEL} kernel."
-
-        if [ -f "/boot/initrd-${KV}" ]; then
-            echo "initrd /boot/initrd-${KV}" >> /boot/grub/grub.conf || die
-            einfo "Added /boot/initrd-${KV} initramfs."
-        fi
-    done
-
-    /bin/chmod 600 /boot/grub/grub.conf
-}
-
 function update_bootmanager() {
-    einfo "Updating ${BOOTMANAGER}..."
-    case "${BOOTMANAGER}" in
-        GRUB)
-            update_grub
-            ;;
-        GRUB2)
-            update_grub2
-            ;;
-        *)
-            ewarn "Invalid bootmanager ${BOOTMANAGER}."
-    esac
+    einfo "Updating GRUB2..."
+    update_grub2
 }
 
 EXEC_NAME=$(/usr/bin/basename "$0")
