@@ -82,9 +82,9 @@ function make_initrd() {
             INCLUDED+=" ${i}"
         done
 
-        /usr/bin/dracut -f -H "${INCLUDED}" /boot/initrd-${KERNEL_VERSION} ${KERNEL_VERSION} &>> "${LOGFILE}" || die
+        /usr/bin/dracut -f "${INCLUDED}" /boot/initrd-${KERNEL_VERSION} ${KERNEL_VERSION} &>> "${LOGFILE}" || die
     else
-        /usr/bin/dracut -f -H /boot/initrd-${KERNEL_VERSION} ${KERNEL_VERSION} &>> "${LOGFILE}" || die
+        /usr/bin/dracut -f /boot/initrd-${KERNEL_VERSION} ${KERNEL_VERSION} &>> "${LOGFILE}" || die
     fi
     einfo "The initrd was saved in /boot/initrd-${KERNEL_VERSION}."
 }
