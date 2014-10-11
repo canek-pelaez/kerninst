@@ -1,8 +1,8 @@
 This is a little script that configures, compiles, and installs the
 kernel which the /usr/src/linux symbolic link points to. It also
 generates an appropriate initramfs for this kernel using dracut (re
-emerging modules if necessary), and updates the GRUB2 configuration
-file.
+emerging modules if necessary), and updates the GRUB2 or Gummiboot
+configuration files.
 
 The script assumes to be running in a Gentoo install, and that a
 kernel configuration file is provided. No attempt to autoconfigure

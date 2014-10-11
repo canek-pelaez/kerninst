@@ -2,7 +2,6 @@
 
 . /etc/init.d/functions.sh
 . /etc/kerninst/kerninst.conf
-. /etc/os-release
 
 LOGFILE=/var/log/kerninst.log
 
