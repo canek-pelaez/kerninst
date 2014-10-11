@@ -82,7 +82,7 @@ function kernel_install_grub() {
     /bin/rm -f "/boot/vmlinuz-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
     _delete_lib_modules
 
-    einfo "Installing kernel version ${KERNEL_VERSION}..."
+    einfo "Installing kernel..."
     make -C /usr/src/linux install &>> "${LOGFILE}" || die
     einfo "The kernel was installed into /boot/vmlinuz-${KERNEL_VERSION}."
 }
@@ -125,7 +125,7 @@ function make_initrd() {
 
     LOCATION=$(_initrd_location)
 
-    einfo "Creating initrd for kernel version ${KERNEL_VERSION}..."
+    einfo "Creating initrd..."
     if [ "${INCLUDES}" != "" ] || [ "${INCLUDE_FIRMWARE}" == "yes" ]; then
         INCLUDED="-I"
 
@@ -159,13 +159,13 @@ function update_bootmanager_gummiboot() {
     KERNEL="/${MACHINE_ID}/${KERNEL_VERSION}/kernel"
     INITRD="/${MACHINE_ID}/${KERNEL_VERSION}/initrd"
 
-    /usr/bin/printf "title\t\t%s\n" ${GUMMIBOOT_TITLE}          > ${ENTRY}
-    /usr/bin/printf "version\t\t%s\n" ${KERNEL_VERSION}        >> ${ENTRY}
-    /usr/bin/printf "machine-id\t%s\n" ${MACHINE_ID}           >> ${ENTRY}
-    /usr/bin/printf "linux\t\t%s\n" ${KERNEL}                  >> ${ENTRY}
-    /usr/bin/printf "initrd\t\t%s\n" ${INITRD}                 >> ${ENTRY}
+    /usr/bin/printf "title\t\t%s\n" "${GUMMIBOOT_TITLE}"        > ${ENTRY}
+    /usr/bin/printf "version\t\t%s\n" "${KERNEL_VERSION}"      >> ${ENTRY}
+    /usr/bin/printf "machine-id\t%s\n" "${MACHINE_ID}"         >> ${ENTRY}
+    /usr/bin/printf "linux\t\t%s\n" "${KERNEL}"                >> ${ENTRY}
+    /usr/bin/printf "initrd\t\t%s\n" "${INITRD}"               >> ${ENTRY}
     /usr/bin/printf "options\t\t%s\n" "${KERNEL_COMMAND_LINE}" >> ${ENTRY}
-    /usr/bin/printf "splash\t\t%s\n" ${GUMMIBOOT_SPLASH}       >> ${ENTRY}
+    /usr/bin/printf "splash\t\t%s\n" "${GUMMIBOOT_SPLASH}"     >> ${ENTRY}
 }
 
 function update_bootmanager() {
