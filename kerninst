@@ -105,7 +105,7 @@ function kernel_install_gummiboot() {
 function _initrd_location() {
     case "${BOOT_MANAGER}" in
         grub)
-            echo "/boot/initrd-${KERNEL_VERSION} ${KERNEL_VERSION}"
+            echo "/boot/initrd-${KERNEL_VERSION}"
             ;;
         gummiboot)
             echo "/boot/${MACHINE_ID}/${KERNEL_VERSION}/initrd"
@@ -136,9 +136,9 @@ function make_initrd() {
             INCLUDED+=" ${i}"
         done
 
-        /usr/bin/dracut -f "${INCLUDED}" "${LOCATION}" &>> "${LOGFILE}" || die
+        /usr/bin/dracut -f "${INCLUDED}" "${LOCATION}" "${KERNEL_VERSION}" &>> "${LOGFILE}" || die
     else
-        /usr/bin/dracut -f "${LOCATION}" &>> "${LOGFILE}" || die
+        /usr/bin/dracut -f "${LOCATION}" "${KERNEL_VERSION}" &>> "${LOGFILE}" || die
     fi
     einfo "The initrd was installed into ${LOCATION}."
 }
