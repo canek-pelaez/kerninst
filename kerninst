@@ -24,7 +24,7 @@ fi
 
 KERNEL_VERSION=$(readlink /usr/src/linux | sed "s/^linux-//g")
 
-if [ ${KERNEL_VERSION} == "" ] || [[ ${KERNEL_VERSION} =~ \ |\' ]]; then
+if [ "${KERNEL_VERSION}" == "" ] || [[ "${KERNEL_VERSION}" =~ \ |\' ]]; then
     eerror "The version ${KERNEL_VERSION} is not a valid kernel version."
     exit 1
 fi
@@ -82,8 +82,9 @@ function kernel_install_grub() {
     /bin/rm -f "/boot/vmlinuz-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
     _delete_lib_modules
 
-    einfo "Installing kernel..."
+    einfo "Installing kernel version ${KERNEL_VERSION}..."
     make -C /usr/src/linux install &>> "${LOGFILE}" || die
+    einfo "The kernel was installed into /boot/vmlinuz-${KERNEL_VERSION}."
 }
 
 function kernel_install_gummiboot() {
@@ -94,10 +95,12 @@ function kernel_install_gummiboot() {
         "/boot/loader/entries/${MACHINE_ID}-${KERNEL_VERSION}.conf" &>> "${LOGFILE}" || die
     _delete_lib_modules
 
+    LOCATION="/boot/${MACHINE_ID}/${KERNEL_VERSION}/kernel"
+
     einfo "Installing kernel..."
     /bin/mkdir -p "/boot/${MACHINE_ID}/${KERNEL_VERSION}" &>> "${LOGFILE}" || die
-    cp /usr/src/linux/arch/x86/boot/bzImage \
-        "/boot/${MACHINE_ID}/${KERNEL_VERSION}/kernel" &>> "${LOGFILE}" || die
+    cp "/usr/src/linux/arch/x86/boot/bzImage" "${LOCATION}" &>> "${LOGFILE}" || die
+    einfo "The kernel was installed into ${LOCATION}."
 }
 
 function _initrd_location() {
@@ -138,7 +141,7 @@ function make_initrd() {
     else
         /usr/bin/dracut -f "${LOCATION}" &>> "${LOGFILE}" || die
     fi
-    einfo "The initrd was saved in ${LOCATION}."
+    einfo "The initrd was installed into ${LOCATION}."
 }
 
 function update_bootmanager_grub2() {
@@ -148,7 +151,7 @@ function update_bootmanager_grub2() {
 
 function update_bootmanager_gummiboot() {
     einfo "Updating Gummiboot..."
-    if [ ${GUMMIBOOT_TITLE} == "" ]; then
+    if [ "${GUMMIBOOT_TITLE}" == "" ]; then
         GUMMIBOOT_TITLE="Linux"
     fi
 
@@ -156,13 +159,13 @@ function update_bootmanager_gummiboot() {
     KERNEL="/${MACHINE_ID}/${KERNEL_VERSION}/kernel"
     INITRD="/${MACHINE_ID}/${KERNEL_VERSION}/initrd"
 
-    /usr/bin/printf "title\t%s\n" ${GUMMIBOOT_TITLE}        > ${ENTRY}
-    /usr/bin/printf "version\t%s\n" ${KERNEL_VERSION}      >> ${ENTRY}
-    /usr/bin/printf "machine-id\t%s\n" ${MACHINE_ID}       >> ${ENTRY}
-    /usr/bin/printf "linux\t%s\n" ${KERNEL}                >> ${ENTRY}
-    /usr/bin/printf "initrd\t%s\n" ${INITRD}               >> ${ENTRY}
-    /usr/bin/printf "options\t%s\n" ${KERNEL_COMMAND_LINE} >> ${ENTRY}
-    /usr/bin/printf "splash\t%s\n" ${GUMMIBOOT_SPLASH}     >> ${ENTRY}
+    /usr/bin/printf "title\t\t%s\n" ${GUMMIBOOT_TITLE}          > ${ENTRY}
+    /usr/bin/printf "version\t\t%s\n" ${KERNEL_VERSION}        >> ${ENTRY}
+    /usr/bin/printf "machine-id\t%s\n" ${MACHINE_ID}           >> ${ENTRY}
+    /usr/bin/printf "linux\t\t%s\n" ${KERNEL}                  >> ${ENTRY}
+    /usr/bin/printf "initrd\t\t%s\n" ${INITRD}                 >> ${ENTRY}
+    /usr/bin/printf "options\t\t%s\n" "${KERNEL_COMMAND_LINE}" >> ${ENTRY}
+    /usr/bin/printf "splash\t\t%s\n" ${GUMMIBOOT_SPLASH}       >> ${ENTRY}
 }
 
 function update_bootmanager() {
