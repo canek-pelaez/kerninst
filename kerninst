@@ -1,7 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 
 . /etc/init.d/functions.sh
 . /etc/kerninst/kerninst.conf
+. /etc/os-release
 
 LOGFILE=/var/log/kerninst.log
 
@@ -50,18 +51,67 @@ function kernel_compile() {
 }
 
 function kernel_install() {
-    einfo "Deleting kernel files with version ${KERNEL_VERSION} from /boot and /lib/modules..."
+    case "${BOOT_MANAGER}" in
+        grub)
+            kernel_install_grub
+            ;;
+        gummiboot)
+            kernel_install_gummiboot
+            ;;
+        *)
+            eerror "Invalid boot manager."
+            ;;
+    esac
+}
+
+function _delete_lib_modules() {
+    einfo "Deleting kernel files with version ${KERNEL_VERSION} from /lib/modules..."
+    /bin/rm -rf "/lib/modules/${KERNEL_VERSION}" &>> "${LOGFILE}" || die
+}
+
+function _install_modules() {
+    einfo "Installing modules..."
+    make -C /usr/src/linux modules_install &>> "${LOGFILE}" || die
+}
+
+function kernel_install_grub() {
+    einfo "Deleting kernel files with version ${KERNEL_VERSION} from /boot..."
     /bin/rm -f "/boot/config-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
     /bin/rm -f "/boot/initrd-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
     /bin/rm -f "/boot/System.map-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
     /bin/rm -f "/boot/vmlinuz-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
-    /bin/rm -rf "/lib/modules/${KERNEL_VERSION}" &>> "${LOGFILE}" || die
+    _delete_lib_modules
 
     einfo "Installing kernel..."
     make -C /usr/src/linux install &>> "${LOGFILE}" || die
+}
 
-    einfo "Installing modules..."
-    make -C /usr/src/linux modules_install &>> "${LOGFILE}" || die
+function kernel_install_gummiboot() {
+    MACHINE_ID=$(cat /etc/machine-id)
+    einfo "Deleting kernel files with version ${KERNEL_VERSION} from /boot..."
+    /bin/rm -rf "/boot/${MACHINE_ID}/${KERNEL_VERSION}" &>> "${LOGFILE}" || die
+    /bin/rm -f \
+        "/boot/loader/entries/${MACHINE_ID}-${KERNEL_VERSION}.conf" &>> "${LOGFILE}" || die
+    _delete_lib_modules
+
+    einfo "Installing kernel..."
+    /bin/mkdir -p "/boot/${MACHINE_ID}/${KERNEL_VERSION}" &>> "${LOGFILE}" || die
+    cp /usr/src/linux/arch/x86/boot/bzImage \
+        "/boot/${MACHINE_ID}/${KERNEL_VERSION}/kernel" &>> "${LOGFILE}" || die
+}
+
+function _initrd_location() {
+    case "${BOOT_MANAGER}" in
+        grub)
+            echo "/boot/initrd-${KERNEL_VERSION} ${KERNEL_VERSION}"
+            ;;
+        gummiboot)
+            echo "/boot/${MACHINE_ID}/${KERNEL_VERSION}/initrd"
+            ;;
+        *)
+            eerror "Invalid boot manager."
+            ;;
+    esac
 }
 
 function make_initrd() {
@@ -69,6 +119,8 @@ function make_initrd() {
         einfo "Recompiling modules..."
         /usr/bin/emerge -v @module-rebuild &>> "${LOGFILE}" || die
     fi
+
+    LOCATION=$(_initrd_location)
 
     einfo "Creating initrd for kernel version ${KERNEL_VERSION}..."
     if [ "${INCLUDES}" != "" ] || [ "${INCLUDE_FIRMWARE}" == "yes" ]; then
@@ -82,20 +134,49 @@ function make_initrd() {
             INCLUDED+=" ${i}"
         done
 
-        /usr/bin/dracut -f "${INCLUDED}" /boot/initrd-${KERNEL_VERSION} ${KERNEL_VERSION} &>> "${LOGFILE}" || die
+        /usr/bin/dracut -f "${INCLUDED}" "${LOCATION}" &>> "${LOGFILE}" || die
     else
-        /usr/bin/dracut -f /boot/initrd-${KERNEL_VERSION} ${KERNEL_VERSION} &>> "${LOGFILE}" || die
+        /usr/bin/dracut -f "${LOCATION}" &>> "${LOGFILE}" || die
     fi
-    einfo "The initrd was saved in /boot/initrd-${KERNEL_VERSION}."
+    einfo "The initrd was saved in ${LOCATION}."
 }
 
-function update_grub2() {
+function update_bootmanager_grub2() {
+    einfo "Updating GRUB2..."
     /usr/sbin/grub2-mkconfig -o "${GRUB2_CONFIG_FILE}" &>> "${LOGFILE}" || die
 }
 
+function update_bootmanager_gummiboot() {
+    einfo "Updating Gummiboot..."
+    if [ ${GUMMIBOOT_TITLE} == "" ]; then
+        GUMMIBOOT_TITLE="Linux"
+    fi
+
+    ENTRY="/boot/loader/entries/${MACHINE_ID}-${KERNEL_VERSION}.conf"
+    KERNEL="/${MACHINE_ID}/${KERNEL_VERSION}/kernel"
+    INITRD="/${MACHINE_ID}/${KERNEL_VERSION}/initrd"
+
+    /usr/bin/printf "title\t%s\n" ${GUMMIBOOT_TITLE}        > ${ENTRY}
+    /usr/bin/printf "version\t%s\n" ${KERNEL_VERSION}      >> ${ENTRY}
+    /usr/bin/printf "machine-id\t%s\n" ${MACHINE_ID}       >> ${ENTRY}
+    /usr/bin/printf "linux\t%s\n" ${KERNEL}                >> ${ENTRY}
+    /usr/bin/printf "initrd\t%s\n" ${INITRD}               >> ${ENTRY}
+    /usr/bin/printf "options\t%s\n" ${KERNEL_COMMAND_LINE} >> ${ENTRY}
+    /usr/bin/printf "splash\t%s\n" ${GUMMIBOOT_SPLASH}     >> ${ENTRY}
+}
+
 function update_bootmanager() {
-    einfo "Updating GRUB2..."
-    update_grub2
+    case "${BOOT_MANAGER}" in
+        grub)
+            update_bootmanager_grub2
+            ;;
+        gummiboot)
+            kernel_bootmanager_gummiboot
+            ;;
+        *)
+            eerror "Invalid boot manager."
+            ;;
+    esac
 }
 
 EXEC_NAME=$(/usr/bin/basename "$0")
