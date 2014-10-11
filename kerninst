@@ -13,6 +13,7 @@ if [ ! -L /usr/src/linux ]; then
 fi
 
 KERNEL_DIR=$(readlink /usr/src/linux)
+MACHINE_ID=$(cat /etc/machine-id)
 
 if [ ! -d "/usr/src/${KERNEL_DIR}" ] || [ ! -f "/usr/src/${KERNEL_DIR}/Makefile" ]; then
     if [ ! grep -q KBUILD "/usr/src/${KERNEL_DIR}/Makefile" ]; then
@@ -87,7 +88,6 @@ function kernel_install_grub() {
 }
 
 function kernel_install_gummiboot() {
-    MACHINE_ID=$(cat /etc/machine-id)
     einfo "Deleting kernel files with version ${KERNEL_VERSION} from /boot..."
     /bin/rm -rf "/boot/${MACHINE_ID}/${KERNEL_VERSION}" &>> "${LOGFILE}" || die
     /bin/rm -f \
