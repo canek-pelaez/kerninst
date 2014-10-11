@@ -171,7 +171,7 @@ function update_bootmanager() {
             update_bootmanager_grub2
             ;;
         gummiboot)
-            kernel_bootmanager_gummiboot
+            update_bootmanager_gummiboot
             ;;
         *)
             eerror "Invalid boot manager."
