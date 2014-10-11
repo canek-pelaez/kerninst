@@ -50,7 +50,48 @@ function kernel_compile() {
     /usr/bin/make ${KERNEL_MAKEOPTS} -C /usr/src/linux &>> "${LOGFILE}" || die
 }
 
+function _delete_kernel_files_grub() {
+    einfo "Deleting kernel files with version ${KERNEL_VERSION} from /boot..."
+    /bin/rm -f "/boot/config-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
+    /bin/rm -f "/boot/initrd-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
+    /bin/rm -f "/boot/System.map-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
+    /bin/rm -f "/boot/vmlinuz-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
+}
+
+function _delete_kernel_files_gummiboot() {
+    einfo "Deleting kernel files with version ${KERNEL_VERSION} from /boot..."
+    /bin/rm -rf "/boot/${MACHINE_ID}/${KERNEL_VERSION}" &>> "${LOGFILE}" || die
+    /bin/rm -f \
+        "/boot/loader/entries/${MACHINE_ID}-${KERNEL_VERSION}.conf" &>> "${LOGFILE}" || die
+}
+
+function _delete_lib_modules() {
+    einfo "Deleting kernel files with version ${KERNEL_VERSION} from /lib/modules..."
+    /bin/rm -rf "/lib/modules/${KERNEL_VERSION}" &>> "${LOGFILE}" || die
+}
+
+function _delete_kernel_files() {
+    case "${BOOT_MANAGER}" in
+        grub)
+            _delete_kernel_files_grub
+            ;;
+        gummiboot)
+            _delete_kernel_files_gummiboot
+            ;;
+        *)
+            eerror "Invalid boot manager."
+            ;;
+    esac
+    _delete_lib_modules
+}
+
+function _install_modules() {
+    einfo "Installing modules..."
+    make -C /usr/src/linux modules_install &>> "${LOGFILE}" || die
+}
+
 function kernel_install() {
+    _delete_kernel_files
     case "${BOOT_MANAGER}" in
         grub)
             kernel_install_grub
@@ -62,38 +103,16 @@ function kernel_install() {
             eerror "Invalid boot manager."
             ;;
     esac
-}
-
-function _delete_lib_modules() {
-    einfo "Deleting kernel files with version ${KERNEL_VERSION} from /lib/modules..."
-    /bin/rm -rf "/lib/modules/${KERNEL_VERSION}" &>> "${LOGFILE}" || die
-}
-
-function _install_modules() {
-    einfo "Installing modules..."
-    make -C /usr/src/linux modules_install &>> "${LOGFILE}" || die
+    _install_modules
 }
 
 function kernel_install_grub() {
-    einfo "Deleting kernel files with version ${KERNEL_VERSION} from /boot..."
-    /bin/rm -f "/boot/config-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
-    /bin/rm -f "/boot/initrd-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
-    /bin/rm -f "/boot/System.map-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
-    /bin/rm -f "/boot/vmlinuz-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
-    _delete_lib_modules
-
     einfo "Installing kernel..."
     make -C /usr/src/linux install &>> "${LOGFILE}" || die
     einfo "The kernel was installed into /boot/vmlinuz-${KERNEL_VERSION}."
 }
 
 function kernel_install_gummiboot() {
-    einfo "Deleting kernel files with version ${KERNEL_VERSION} from /boot..."
-    /bin/rm -rf "/boot/${MACHINE_ID}/${KERNEL_VERSION}" &>> "${LOGFILE}" || die
-    /bin/rm -f \
-        "/boot/loader/entries/${MACHINE_ID}-${KERNEL_VERSION}.conf" &>> "${LOGFILE}" || die
-    _delete_lib_modules
-
     LOCATION="/boot/${MACHINE_ID}/${KERNEL_VERSION}/kernel"
 
     einfo "Installing kernel..."
