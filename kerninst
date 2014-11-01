@@ -130,7 +130,7 @@ function _initrd_location() {
             echo "/boot/${MACHINE_ID}/${KERNEL_VERSION}/initrd"
             ;;
         *)
-            eerror "Invalid boot manager."
+            echo ""
             ;;
     esac
 }
@@ -142,6 +142,9 @@ function make_initrd() {
     fi
 
     LOCATION=$(_initrd_location)
+    if [ "${LOCATION}" == "" ]; then
+        eerror "Invalid boot manager."
+    fi
 
     einfo "Creating initrd..."
     if [ "${INCLUDES}" != "" ] || [ "${INCLUDE_FIRMWARE}" == "yes" ]; then
@@ -183,7 +186,9 @@ function update_bootmanager_gummiboot() {
     /usr/bin/printf "linux\t\t%s\n" "${KERNEL}"                >> ${ENTRY}
     /usr/bin/printf "initrd\t\t%s\n" "${INITRD}"               >> ${ENTRY}
     /usr/bin/printf "options\t\t%s\n" "${KERNEL_COMMAND_LINE}" >> ${ENTRY}
-    /usr/bin/printf "splash\t\t%s\n" "${GUMMIBOOT_SPLASH}"     >> ${ENTRY}
+    if [ "${GUMMIBOOT_SPLASH}" != "" ]; then
+        /usr/bin/printf "splash\t\t%s\n" "${GUMMIBOOT_SPLASH}" >> ${ENTRY}
+    fi
 }
 
 function update_bootmanager() {
