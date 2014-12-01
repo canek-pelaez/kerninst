@@ -167,6 +167,10 @@ function make_initrd() {
 
 function update_bootmanager_grub2() {
     einfo "Updating GRUB2..."
+    if [ "${MOUNT_BOOT_EFI}" == "yes" ]; then
+        einfo "Mounting EFI boot directory..."
+        /bin/mountpoint -q  /boot/efi || /bin/mount /boot/efi
+    fi
     /usr/sbin/grub2-mkconfig -o "${GRUB2_CONFIG_FILE}" &>> "${LOGFILE}" || die
 }
 
