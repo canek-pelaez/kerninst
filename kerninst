@@ -228,6 +228,69 @@ for ARG in "$@"; do
     esac
 done
 
+function _delete_other_files_grub() {
+    for FILE in /boot/{config,initrd,System.map,vmlinuz}-*; do
+        if [ "${FILE}" == "/boot/config-${KERNEL_VERSION}" ] ||
+               [ "${FILE}" == "/boot/initrd-${KERNEL_VERSION}" ] ||
+               [ "${FILE}" == "/boot/System.map-${KERNEL_VERSION}" ] ||
+               [ "${FILE}" == "/boot/vmlinuz-${KERNEL_VERSION}" ]; then
+            echo "${FILE} is a boot file from the selected kernel."
+            continue
+        fi
+        eeinfo "Deleting ${FILE}..."
+        # /bin/rm -f "${FILE}" &>> "${LOGFILE}" || die
+    done
+}
+
+function _delete_other_files_gummiboot() {
+    for DIR in /boot/${MACHINE_ID}/*; do
+        if [ "${DIR}" == "/boot/${MACHINE_ID}/${KERNEL_VERSION}" ]; then
+            echo "${DIR} is the selected kernel boot directory."
+            continue
+        fi
+        einfo "Deleting ${DIR}..."
+        # /bin/rm -rf "${DIR}" &>> "${LOGFILE}" || die
+    done
+    for FILE in /boot/loader/entries/*; do
+        if [ "${FILE}" == "/boot/loader/entries/${MACHINE_ID}-${KERNEL_VERSION}.conf" ]; then
+            echo "${FILE} is the selected kernel boot entry."
+            continue
+        fi
+        einfo "Deleting ${FILE}..."
+        # /bin/rm -f "${FILE}" &>> "${LOGFILE}" || die
+    fi
+}
+
+function clean() {
+    for DIR in /usr/src/linux-* /lib/modules/*; do
+        if [ ! -d "${DIR}" ]; then
+            echo "${DIR} is not a dir."
+            continue
+        fi
+        if [ "${DIR}" == "${KERNEL_DIR}" ]; then
+            echo "${DIR} is the selected kernel directory."
+            continue
+        fi
+        if [ "${DIR}" == "/lib/modules/${KERNEL_VERSION}" ]; then
+            echo "${DIR} is the selected kernel modules directory."
+            continue
+        fi
+        einfo "Deleting ${DIR}..."
+        # /bin/rm -rf "${DIR}" &>> "${LOGFILE}" || die
+    done
+    case "${BOOT_MANAGER}" in
+        grub)
+            _delete_other_files_grub
+            ;;
+        gummiboot)
+            _delete_other_files_gummiboot
+            ;;
+        *)
+            eerror "Invalid boot manager."
+            ;;
+    esac
+}
+
 case "${EXEC_NAME}" in
     kerninst)
         kernel_compile
@@ -246,6 +309,9 @@ case "${EXEC_NAME}" in
         ;;
     kerninst-updatebm)
         update_bootmanager
+        ;;
+    kerninst-clean)
+        clean
         ;;
     *)
         eerror "Invalid executable name."
