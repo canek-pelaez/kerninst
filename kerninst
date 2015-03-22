@@ -245,7 +245,6 @@ function _delete_other_files_grub() {
 function _delete_other_files_gummiboot() {
     for DIR in /boot/${MACHINE_ID}/*; do
         if [ "${DIR}" == "/boot/${MACHINE_ID}/${KERNEL_VERSION}" ]; then
-            echo "${DIR} is the selected kernel boot directory."
             continue
         fi
         einfo "Deleting ${DIR}..."
@@ -253,7 +252,6 @@ function _delete_other_files_gummiboot() {
     done
     for FILE in /boot/loader/entries/*; do
         if [ "${FILE}" == "/boot/loader/entries/${MACHINE_ID}-${KERNEL_VERSION}.conf" ]; then
-            echo "${FILE} is the selected kernel boot entry."
             continue
         fi
         einfo "Deleting ${FILE}..."
@@ -264,15 +262,12 @@ function _delete_other_files_gummiboot() {
 function clean() {
     for DIR in /usr/src/linux-* /lib/modules/*; do
         if [ ! -d "${DIR}" ]; then
-            echo "${DIR} is not a dir."
             continue
         fi
         if [ "${DIR}" == "/usr/src/${KERNEL_DIR}" ]; then
-            echo "${DIR} is the selected kernel directory."
             continue
         fi
         if [ "${DIR}" == "/lib/modules/${KERNEL_VERSION}" ]; then
-            echo "${DIR} is the selected kernel modules directory."
             continue
         fi
         einfo "Deleting ${DIR}..."
