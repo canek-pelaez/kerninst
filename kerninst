@@ -258,7 +258,7 @@ function _delete_other_files_gummiboot() {
         fi
         einfo "Deleting ${FILE}..."
         # /bin/rm -f "${FILE}" &>> "${LOGFILE}" || die
-    fi
+    done
 }
 
 function clean() {
