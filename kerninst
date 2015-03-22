@@ -234,11 +234,10 @@ function _delete_other_files_grub() {
                [ "${FILE}" == "/boot/initrd-${KERNEL_VERSION}" ] ||
                [ "${FILE}" == "/boot/System.map-${KERNEL_VERSION}" ] ||
                [ "${FILE}" == "/boot/vmlinuz-${KERNEL_VERSION}" ]; then
-            echo "${FILE} is a boot file from the selected kernel."
             continue
         fi
         eeinfo "Deleting ${FILE}..."
-        # /bin/rm -f "${FILE}" &>> "${LOGFILE}" || die
+        /bin/rm -f "${FILE}" &>> "${LOGFILE}" || die
     done
 }
 
@@ -248,14 +247,14 @@ function _delete_other_files_gummiboot() {
             continue
         fi
         einfo "Deleting ${DIR}..."
-        # /bin/rm -rf "${DIR}" &>> "${LOGFILE}" || die
+        /bin/rm -rf "${DIR}" &>> "${LOGFILE}" || die
     done
     for FILE in /boot/loader/entries/*; do
         if [ "${FILE}" == "/boot/loader/entries/${MACHINE_ID}-${KERNEL_VERSION}.conf" ]; then
             continue
         fi
         einfo "Deleting ${FILE}..."
-        # /bin/rm -f "${FILE}" &>> "${LOGFILE}" || die
+        /bin/rm -f "${FILE}" &>> "${LOGFILE}" || die
     done
 }
 
@@ -271,7 +270,7 @@ function clean() {
             continue
         fi
         einfo "Deleting ${DIR}..."
-        # /bin/rm -rf "${DIR}" &>> "${LOGFILE}" || die
+        /bin/rm -rf "${DIR}" &>> "${LOGFILE}" || die
     done
     case "${BOOT_MANAGER}" in
         grub)
