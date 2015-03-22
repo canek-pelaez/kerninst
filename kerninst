@@ -267,7 +267,7 @@ function clean() {
             echo "${DIR} is not a dir."
             continue
         fi
-        if [ "${DIR}" == "${KERNEL_DIR}" ]; then
+        if [ "${DIR}" == "/usr/src/${KERNEL_DIR}" ]; then
             echo "${DIR} is the selected kernel directory."
             continue
         fi
