@@ -236,7 +236,7 @@ function _delete_other_files_grub() {
                [ "${FILE}" == "/boot/vmlinuz-${KERNEL_VERSION}" ]; then
             continue
         fi
-        eeinfo "Deleting ${FILE}..."
+        einfo "Deleting ${FILE}..."
         /bin/rm -f "${FILE}" &>> "${LOGFILE}" || die
     done
 }
