@@ -72,7 +72,7 @@ function _delete_kernel_files_grub() {
     /bin/rm -f "/boot/vmlinuz-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
 }
 
-function _delete_kernel_files_gummiboot() {
+function _delete_kernel_files_bootctl() {
     kinfo "Deleting kernel files with version ${KERNEL_VERSION} from /boot..."
     /bin/rm -rf "/boot/${MACHINE_ID}/${KERNEL_VERSION}" &>> "${LOGFILE}" || die
     /bin/rm -f \
@@ -89,8 +89,8 @@ function _delete_kernel_files() {
         grub)
             _delete_kernel_files_grub
             ;;
-        gummiboot)
-            _delete_kernel_files_gummiboot
+        bootctl)
+            _delete_kernel_files_bootctl
             ;;
         *)
             kerror "Invalid boot manager."
@@ -110,8 +110,8 @@ function kernel_install() {
         grub)
             kernel_install_grub
             ;;
-        gummiboot)
-            kernel_install_gummiboot
+        bootctl)
+            kernel_install_bootctl
             ;;
         *)
             kerror "Invalid boot manager."
@@ -126,7 +126,7 @@ function kernel_install_grub() {
     kinfo "The kernel was installed into /boot/vmlinuz-${KERNEL_VERSION}."
 }
 
-function kernel_install_gummiboot() {
+function kernel_install_bootctl() {
     LOCATION="/boot/${MACHINE_ID}/${KERNEL_VERSION}/kernel"
 
     kinfo "Installing kernel..."
@@ -140,7 +140,7 @@ function _initrd_location() {
         grub)
             echo "/boot/initrd-${KERNEL_VERSION}"
             ;;
-        gummiboot)
+        bootctl)
             echo "/boot/${MACHINE_ID}/${KERNEL_VERSION}/initrd"
             ;;
         *)
@@ -188,24 +188,24 @@ function update_bootmanager_grub2() {
     /usr/sbin/grub2-mkconfig -o "${GRUB2_CONFIG_FILE}" &>> "${LOGFILE}" || die
 }
 
-function update_bootmanager_gummiboot() {
-    kinfo "Updating Gummiboot..."
-    if [ "${GUMMIBOOT_TITLE}" == "" ]; then
-        GUMMIBOOT_TITLE="Linux"
+function update_bootmanager_bootctl() {
+    kinfo "Updating Bootctl..."
+    if [ "${BOOTCTL_TITLE}" == "" ]; then
+        BOOTCTL_TITLE="Linux"
     fi
 
     ENTRY="/boot/loader/entries/${MACHINE_ID}-${KERNEL_VERSION}.conf"
     KERNEL="/${MACHINE_ID}/${KERNEL_VERSION}/kernel"
     INITRD="/${MACHINE_ID}/${KERNEL_VERSION}/initrd"
 
-    /usr/bin/printf "title\t\t%s\n" "${GUMMIBOOT_TITLE}"        > ${ENTRY}
+    /usr/bin/printf "title\t\t%s\n" "${BOOTCTL_TITLE}"        > ${ENTRY}
     /usr/bin/printf "version\t\t%s\n" "${KERNEL_VERSION}"      >> ${ENTRY}
     /usr/bin/printf "machine-id\t%s\n" "${MACHINE_ID}"         >> ${ENTRY}
     /usr/bin/printf "linux\t\t%s\n" "${KERNEL}"                >> ${ENTRY}
     /usr/bin/printf "initrd\t\t%s\n" "${INITRD}"               >> ${ENTRY}
     /usr/bin/printf "options\t\t%s\n" "${KERNEL_COMMAND_LINE}" >> ${ENTRY}
-    if [ "${GUMMIBOOT_SPLASH}" != "" ]; then
-        /usr/bin/printf "splash\t\t%s\n" "${GUMMIBOOT_SPLASH}" >> ${ENTRY}
+    if [ "${BOOTCTL_SPLASH}" != "" ]; then
+        /usr/bin/printf "splash\t\t%s\n" "${BOOTCTL_SPLASH}" >> ${ENTRY}
     fi
 }
 
@@ -214,8 +214,8 @@ function update_bootmanager() {
         grub)
             update_bootmanager_grub2
             ;;
-        gummiboot)
-            update_bootmanager_gummiboot
+        bootctl)
+            update_bootmanager_bootctl
             ;;
         *)
             kerror "Invalid boot manager."
@@ -255,7 +255,7 @@ function _delete_other_files_grub() {
     done
 }
 
-function _delete_other_files_gummiboot() {
+function _delete_other_files_bootctl() {
     for DIR in /boot/${MACHINE_ID}/*; do
         if [ "${DIR}" == "/boot/${MACHINE_ID}/${KERNEL_VERSION}" ]; then
             continue
@@ -290,8 +290,8 @@ function clean() {
         grub)
             _delete_other_files_grub
             ;;
-        gummiboot)
-            _delete_other_files_gummiboot
+        bootctl)
+            _delete_other_files_bootctl
             ;;
         *)
             kerror "Invalid boot manager."
