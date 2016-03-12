@@ -43,6 +43,16 @@ if [ "${KERNEL_VERSION}" == "" ] || [[ "${KERNEL_VERSION}" =~ \ |\' ]]; then
     exit 1
 fi
 
+if [ "${BOOT_MANAGER}" == "grub" ] && [ ! -d "/boot/grub" ]; then
+    kerror "Grub does not seem to be installed or /boot is not mounted."
+    exit 1
+fi
+
+if [ "${BOOT_MANAGER}" == "bootctl" ] && [ ! -d "/boot/EFI" ]; then
+    kerror "Bootctl does not seem to be installed or /boot is not mounted."
+    exit 1
+fi
+
 function die() {
     kerror "An error ocurred. Exiting."
     exit 1
