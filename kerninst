@@ -10,6 +10,7 @@ function termtitle() {
 function kerror() {
     termtitle "${1}"
     eerror "${1}"
+    exit 1
 }
 
 function kinfo() {
@@ -23,7 +24,6 @@ LOGFILE=/var/log/kerninst.log
 
 if [ ! -L /usr/src/linux ]; then
     kerror "The symbolic link /usr/src/linux does not exists."
-    exit 1
 fi
 
 KERNEL_DIR=$(readlink /usr/src/linux)
@@ -32,7 +32,6 @@ MACHINE_ID=$(cat /etc/machine-id)
 if [ ! -d "/usr/src/${KERNEL_DIR}" ] || [ ! -f "/usr/src/${KERNEL_DIR}/Makefile" ]; then
     if [ ! grep -q KBUILD "/usr/src/${KERNEL_DIR}/Makefile" ]; then
         kerror "The file /usr/src/${KERNEL_DIR} is not a valid kernel directory."
-        exit 1
     fi
 fi
 
@@ -40,22 +39,18 @@ KERNEL_VERSION=$(readlink /usr/src/linux | sed "s/^linux-//g")
 
 if [ "${KERNEL_VERSION}" == "" ] || [[ "${KERNEL_VERSION}" =~ \ |\' ]]; then
     kerror "The version ${KERNEL_VERSION} is not a valid kernel version."
-    exit 1
 fi
 
 if [ "${BOOT_MANAGER}" == "grub" ] && [ ! -d "/boot/grub" ]; then
     kerror "Grub does not seem to be installed or /boot is not mounted."
-    exit 1
 fi
 
 if [ "${BOOT_MANAGER}" == "bootctl" ] && [ ! -d "/boot/EFI" ]; then
     kerror "Bootctl does not seem to be installed or /boot is not mounted."
-    exit 1
 fi
 
 function die() {
     kerror "An error ocurred. Exiting."
-    exit 1
 }
 
 function kernel_compile() {
@@ -103,7 +98,7 @@ function _delete_kernel_files() {
             _delete_kernel_files_bootctl
             ;;
         *)
-            kerror "Invalid boot manager."
+            kwarning "Invalid boot manager."
             ;;
     esac
     _delete_lib_modules
@@ -124,7 +119,7 @@ function kernel_install() {
             kernel_install_bootctl
             ;;
         *)
-            kerror "Invalid boot manager."
+            kwarning "Invalid boot manager."
             ;;
     esac
     _install_modules
