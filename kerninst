@@ -96,6 +96,7 @@ function _bootsubdir() {
 BOOT_SUBDIR=$(_bootsubdir)
 if [ ! -d "${BOOT_SUBDIR}" ]; then
     if [ "${MOUNT_BOOT}" == "yes" ]; then
+        kinfo "Mounting /boot..."
         mount /boot || die
     fi
 fi
@@ -162,12 +163,6 @@ function _delete_kernel_files() {
     _delete_lib_modules
 }
 
-# Installs the modules
-function _install_modules() {
-    kinfo "Installing modules..."
-    make -C /usr/src/linux modules_install &>> "${LOGFILE}" || die
-}
-
 # Installs the kernel files for Grub
 function _kernel_install_grub() {
     kinfo "Installing kernel..."
@@ -183,6 +178,12 @@ function _kernel_install_bootctl() {
     /bin/mkdir -p "/boot/${MACHINE_ID}/${KERNEL_VERSION}" &>> "${LOGFILE}" || die
     cp "/usr/src/linux/arch/x86/boot/bzImage" "${LOCATION}" &>> "${LOGFILE}" || die
     kinfo "The kernel was installed into ${LOCATION}."
+}
+
+# Installs the modules
+function _install_modules() {
+    kinfo "Installing modules..."
+    make -C /usr/src/linux modules_install &>> "${LOGFILE}" || die
 }
 
 # Installs the kernel files and modules
