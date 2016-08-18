@@ -241,13 +241,13 @@ function make_initrd() {
 }
 
 # Updates grub
-function _update_bootmanager_grub2() {
-    kinfo "Updating GRUB2..."
+function _update_bootmanager_grub() {
+    kinfo "Updating GRUB..."
     if [ "${MOUNT_BOOT_EFI}" == "yes" ]; then
         kinfo "Mounting EFI boot directory..."
         /bin/mountpoint -q  /boot/efi || /bin/mount /boot/efi
     fi
-    /usr/sbin/grub2-mkconfig -o "${GRUB2_CONFIG_FILE}" &>> "${LOGFILE}" || die
+    /usr/sbin/grub-mkconfig -o "${GRUB_CONFIG_FILE}" &>> "${LOGFILE}" || die
 }
 
 # Updates bootctl
@@ -276,7 +276,7 @@ function _update_bootmanager_bootctl() {
 function update_bootmanager() {
     case "${BOOT_MANAGER}" in
         grub)
-            _update_bootmanager_grub2
+            _update_bootmanager_grub
             ;;
         bootctl)
             _update_bootmanager_bootctl
