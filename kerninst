@@ -23,8 +23,17 @@
 
 # Pretty messages
 . /etc/init.d/functions.sh
-# Configuration
-. /etc/kerninst/kerninst.conf
+
+# Allow overriding of configuration
+function getconf() {
+    V="${1}"
+    val=$(/bin/grep "^${V}=" "/etc/kerninst/kerninst.conf" | cut -d "=" -f 2)
+    if [ -z "${!V}" ]; then
+        echo -n "${val}"
+    else
+        echo -n "${!V}"
+    fi
+}
 
 # Set the terminal title
 function termtitle() {
@@ -44,8 +53,21 @@ function kinfo() {
     einfo "${1}"
 }
 
-# Log file
-LOGFILE=/var/log/kerninst.log
+# Set configuration
+LOGFILE=$(getconf "LOGFILE")
+KERNEL_CONFIG=$(getconf "KERNEL_CONFIG")
+BOOT_MANAGER=$(getconf "BOOT_MANAGER")
+GRUB_CONFIG_FILE=$(getconf "GRUB_CONFIG_FILE")
+BOOTCTL_TITLE=$(getconf "BOOTCTL_TITLE")
+BOOTCTL_SPLASH=$(getconf "BOOTCTL_SPLASH")
+INCLUDE_FIRMWARE=$(getconf "INCLUDE_FIRMWARE")
+KERNEL_MAKEOPTS=$(getconf "KERNEL_MAKEOPTS")
+KERNEL_COMMAND_LINE=$(getconf "KERNEL_COMMAND_LINE")
+MODULES_REBUILD=$(getconf "MODULES_REBUILD")
+UPDATE_KERNEL_CONFIG=$(getconf "UPDATE_KERNEL_CONFIG")
+INCLUDES=$(getconf "INCLUDES")
+MOUNT_BOOT=$(getconf "MOUNT_BOOT")
+MOUNT_BOOT_EFI=$(getconf "MOUNT_BOOT_EFI")
 
 # Delete old log file
 /bin/rm -f "${LOGFILE}"
