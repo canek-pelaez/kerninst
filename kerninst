@@ -388,10 +388,10 @@ case "${EXEC_NAME}" in
     kerninst)
         kernel_compile
         kernel_install
-        make_initrd
         if [ "${INTEL_MICROCODE}" == "yes" ]; then
             make_intel_ucode
         fi
+        make_initrd
         update_bootmanager
         ;;
     kerninst-compile)
@@ -400,9 +400,6 @@ case "${EXEC_NAME}" in
     kerninst-install)
         kernel_install
         ;;
-    kerninst-mkinitrd)
-        make_initrd
-        ;;
     kerninst-intel-ucode)
         if [ "${INTEL_MICROCODE}" == "yes" ]; then
             make_intel_ucode
@@ -410,6 +407,9 @@ case "${EXEC_NAME}" in
             kerror "Intel microcode disbled"
             kerror "Set INTEL_MICROCODE=yes in config file to enable"
         fi
+        ;;
+    kerninst-mkinitrd)
+        make_initrd
         ;;
     kerninst-updatebm)
         update_bootmanager
