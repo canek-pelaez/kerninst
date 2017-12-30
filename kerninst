@@ -227,8 +227,12 @@ function _intel_ucode_location() {
 # Creates the Intel microcode initramfs
 function make_intel_ucode() {
     INTEL_UCODE=$(_intel_ucode_location)
-    kinfo "Generating Intel microcode initramfs..."
-    /usr/sbin/iucode_tool -S --write-earlyfw="${INTEL_UCODE}" /lib/firmware/intel-ucode/*
+    kinfo "Creating Intel microcode initramfs..."
+    /usr/sbin/iucode_tool -S \
+                          --overwrite \
+                          --write-earlyfw="${INTEL_UCODE}" \
+                          /lib/firmware/intel-ucode/* &>> "${LOGFILE}" || die
+    kinfo "The Intel microcode initramfs was installed into ${INTEL_UCODE}."
 }
 
 # Creates the initrd
