@@ -212,6 +212,25 @@ function _initrd_location() {
     esac
 }
 
+# Returns the correct intel-ucode initramfs location
+function _intel_ucode_location() {
+    case "${BOOT_MANAGER}" in
+        grub)
+            echo "/boot/intel-ucode-${KERNEL_VERSION}"
+            ;;
+        bootctl)
+            echo "/boot/${MACHINE_ID}/${KERNEL_VERSION}/intel-ucode"
+            ;;
+    esac
+}
+
+# Creates the Intel microcode initramfs
+function make_intel_ucode() {
+    INTEL_UCODE=$(_intel_ucode_location)
+    kinfo "Generating Intel microcode initramfs..."
+    /usr/sbin/iucode_tool -S --write-earlyfw="${INTEL_UCODE}" /lib/firmware/intel-ucode/*
+}
+
 # Creates the initrd
 function make_initrd() {
     if [ "${MODULES_REBUILD}" == "yes" ]; then
@@ -260,16 +279,17 @@ function _update_bootmanager_bootctl() {
     ENTRY="/boot/loader/entries/${MACHINE_ID}-${KERNEL_VERSION}.conf"
     KERNEL="/${MACHINE_ID}/${KERNEL_VERSION}/kernel"
     INITRD="/${MACHINE_ID}/${KERNEL_VERSION}/initrd"
+    INTEL_UCODE="/${MACHINE_ID}/${KERNEL_VERSION}/intel-ucode"
 
     /usr/bin/printf "title\t\t%s\n" "${BOOTCTL_TITLE}"         >  ${ENTRY}
     /usr/bin/printf "version\t\t%s\n" "${KERNEL_VERSION}"      >> ${ENTRY}
     /usr/bin/printf "machine-id\t%s\n" "${MACHINE_ID}"         >> ${ENTRY}
     /usr/bin/printf "linux\t\t%s\n" "${KERNEL}"                >> ${ENTRY}
+    if [ "${INTEL_MICROCODE}" == "yes" ]; then
+        /usr/bin/printf "initrd\t\t%s\n" "${INTEL_UCODE}"      >> ${ENTRY}
+    fi
     /usr/bin/printf "initrd\t\t%s\n" "${INITRD}"               >> ${ENTRY}
     /usr/bin/printf "options\t\t%s\n" "${KERNEL_COMMAND_LINE}" >> ${ENTRY}
-    if [ "${BOOTCTL_SPLASH}" != "" ]; then
-        /usr/bin/printf "splash\t\t%s\n" "${BOOTCTL_SPLASH}"   >> ${ENTRY}
-    fi
 }
 
 # Updates the boot manager
@@ -309,6 +329,7 @@ done
 function _delete_other_files_grub() {
     for FILE in /boot/{config,initrd,System.map,vmlinuz}-*; do
         if [ "${FILE}" == "/boot/config-${KERNEL_VERSION}" ] ||
+               [ "${FILE}" == "/boot/intel-ucode-${KERNEL_VERSION}" ] ||
                [ "${FILE}" == "/boot/initrd-${KERNEL_VERSION}" ] ||
                [ "${FILE}" == "/boot/System.map-${KERNEL_VERSION}" ] ||
                [ "${FILE}" == "/boot/vmlinuz-${KERNEL_VERSION}" ]; then
@@ -368,6 +389,9 @@ case "${EXEC_NAME}" in
         kernel_compile
         kernel_install
         make_initrd
+        if [ "${INTEL_MICROCODE}" == "yes" ]; then
+            make_intel_ucode
+        fi
         update_bootmanager
         ;;
     kerninst-compile)
@@ -378,6 +402,14 @@ case "${EXEC_NAME}" in
         ;;
     kerninst-mkinitrd)
         make_initrd
+        ;;
+    kerninst-intel-ucode)
+        if [ "${INTEL_MICROCODE}" == "yes" ]; then
+            make_intel_ucode
+        else
+            kerror "Intel microcode disbled"
+            kerror "Set INTEL_MICROCODE=yes in config file to enable"
+        fi
         ;;
     kerninst-updatebm)
         update_bootmanager
