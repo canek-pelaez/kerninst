@@ -146,8 +146,7 @@ function _delete_kernel_files_grub() {
 function _delete_kernel_files_bootctl() {
     kinfo "Deleting kernel files with version ${KERNEL_VERSION} from /boot..."
     /bin/rm -rf "/boot/${MACHINE_ID}/${KERNEL_VERSION}" &>> "${LOGFILE}" || die
-    /bin/rm -f \
-        "/boot/loader/entries/${MACHINE_ID}-${KERNEL_VERSION}.conf" &>> "${LOGFILE}" || die
+    /bin/rm -f "/boot/loader/entries/${MACHINE_ID}-${KERNEL_VERSION}.conf" &>> "${LOGFILE}" || die
 }
 
 # Deletes the kernel version modules
@@ -234,9 +233,7 @@ function _intel_ucode_location() {
 function make_intel_ucode() {
     INTEL_UCODE=$(_intel_ucode_location)
     kinfo "Creating Intel microcode initramfs..."
-    /usr/sbin/iucode_tool -S \
-                          --overwrite \
-                          --write-earlyfw="${INTEL_UCODE}" \
+    /usr/sbin/iucode_tool -S --overwrite -write-earlyfw="${INTEL_UCODE}" \
                           /lib/firmware/intel-ucode/* &>> "${LOGFILE}" || die
     kinfo "The Intel microcode initramfs was installed into ${INTEL_UCODE}."
 }
