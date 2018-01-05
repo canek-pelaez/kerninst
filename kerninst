@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright © 2016 Canek Peláez Valdés
+# Copyright © 2016-2017 Canek Peláez Valdés
 
 # Kerninst is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software
@@ -121,6 +121,12 @@ function kernel_compile() {
     if [ "${UPDATE_KERNEL_CONFIG}" == "yes" ]; then
         kinfo "Updating kernel config..."
         /bin/cp -f /usr/src/linux/.config "${KERNEL_CONFIG}" || die
+    fi
+
+    SYNC_CHECK="/usr/src/linux/tools/objtool/sync-check.sh"
+    if [ ! -x ${SYNC_CHECK} ]; then
+        kinfo "Making sync-check.sh executable..."
+        /bin/chmod 755 ${SYNC_CHECK} || die
     fi
 
     kinfo "Compiling kernel..."
