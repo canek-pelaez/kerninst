@@ -288,15 +288,15 @@ function _update_bootmanager_bootctl() {
     INITRD="/${MACHINE_ID}/${KERNEL_VERSION}/initrd"
     INTEL_UCODE="/${MACHINE_ID}/${KERNEL_VERSION}/intel-ucode"
 
-    /usr/bin/printf "title\t\t%s\n" "${BOOTCTL_TITLE}"         >  ${ENTRY}
-    /usr/bin/printf "version\t\t%s\n" "${KERNEL_VERSION}"      >> ${ENTRY}
-    /usr/bin/printf "machine-id\t%s\n" "${MACHINE_ID}"         >> ${ENTRY}
-    /usr/bin/printf "linux\t\t%s\n" "${KERNEL}"                >> ${ENTRY}
+    /usr/bin/printf "title        %s\n" "${BOOTCTL_TITLE}"         >  ${ENTRY}
+    /usr/bin/printf "version      %s\n" "${KERNEL_VERSION}"      >> ${ENTRY}
+    /usr/bin/printf "machine-id   %s\n" "${MACHINE_ID}"         >> ${ENTRY}
+    /usr/bin/printf "linux        %s\n" "${KERNEL}"                >> ${ENTRY}
     if [ "${INTEL_MICROCODE}" == "yes" ]; then
-        /usr/bin/printf "initrd\t\t%s\n" "${INTEL_UCODE}"      >> ${ENTRY}
+        /usr/bin/printf "initrd       %s\n" "${INTEL_UCODE}"      >> ${ENTRY}
     fi
-    /usr/bin/printf "initrd\t\t%s\n" "${INITRD}"               >> ${ENTRY}
-    /usr/bin/printf "options\t\t%s\n" "${KERNEL_COMMAND_LINE}" >> ${ENTRY}
+    /usr/bin/printf "initrd       %s\n" "${INITRD}"               >> ${ENTRY}
+    /usr/bin/printf "options      %s\n" "${KERNEL_COMMAND_LINE}" >> ${ENTRY}
 }
 
 # Updates the boot manager
