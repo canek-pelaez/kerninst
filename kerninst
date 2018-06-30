@@ -109,7 +109,7 @@ function die() {
     kerror "An error ocurred. Exiting."
 }
 
-# Copies the kernel configuration to the new kernel, runs allconfig and compiles
+# Copies the kernel configuration to the new kernel, runs oldconfig and compiles
 # the kernel
 function kernel_compile() {
     kinfo "Copying kernel configuration from ${KERNEL_CONFIG}..."
