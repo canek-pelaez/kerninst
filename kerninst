@@ -229,15 +229,6 @@ function _intel_ucode_location() {
     esac
 }
 
-# Creates the Intel microcode initramfs
-function make_intel_ucode() {
-    INTEL_UCODE=$(_intel_ucode_location)
-    kinfo "Creating Intel microcode initramfs..."
-    /usr/sbin/iucode_tool -S --overwrite --write-earlyfw="${INTEL_UCODE}" \
-                          /lib/firmware/intel-ucode/* &>> "${LOGFILE}" || die
-    kinfo "The Intel microcode initramfs was installed into ${INTEL_UCODE}."
-}
-
 # Creates the initrd
 function make_initrd() {
     if [ "${MODULES_REBUILD}" == "yes" ]; then
@@ -292,9 +283,6 @@ function _update_bootmanager_bootctl() {
     /usr/bin/printf "version      %s\n" "${KERNEL_VERSION}"      >> ${ENTRY}
     /usr/bin/printf "machine-id   %s\n" "${MACHINE_ID}"         >> ${ENTRY}
     /usr/bin/printf "linux        %s\n" "${KERNEL}"                >> ${ENTRY}
-    if [ "${INTEL_MICROCODE}" == "yes" ]; then
-        /usr/bin/printf "initrd       %s\n" "${INTEL_UCODE}"      >> ${ENTRY}
-    fi
     /usr/bin/printf "initrd       %s\n" "${INITRD}"               >> ${ENTRY}
     /usr/bin/printf "options      %s\n" "${KERNEL_COMMAND_LINE}" >> ${ENTRY}
 }
@@ -395,9 +383,6 @@ case "${EXEC_NAME}" in
     kerninst)
         kernel_compile
         kernel_install
-        if [ "${INTEL_MICROCODE}" == "yes" ]; then
-            make_intel_ucode
-        fi
         make_initrd
         update_bootmanager
         ;;
@@ -406,14 +391,6 @@ case "${EXEC_NAME}" in
         ;;
     kerninst-install)
         kernel_install
-        ;;
-    kerninst-intel-ucode)
-        if [ "${INTEL_MICROCODE}" == "yes" ]; then
-            make_intel_ucode
-        else
-            kerror "Intel microcode disbled"
-            kerror "Set INTEL_MICROCODE=yes in config file to enable"
-        fi
         ;;
     kerninst-mkinitrd)
         make_initrd
