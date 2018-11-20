@@ -203,7 +203,6 @@ function _install_modules() {
 # Installs the kernel files and modules
 function kernel_install() {
     _delete_kernel_files
-    _mount_boot
     case "${BOOT_MANAGER}" in
         grub)
             _kernel_install_grub
@@ -212,7 +211,6 @@ function kernel_install() {
             _kernel_install_bootctl
             ;;
     esac
-    _umount_boot
     _install_modules
 }
 
@@ -392,25 +390,35 @@ function clean() {
 # "Main"
 case "${EXEC_NAME}" in
     kerninst)
+        _mount_boot
         kernel_compile
         kernel_install
         make_initrd
         update_bootmanager
+        _umount_boot
         ;;
     kerninst-compile)
         kernel_compile
         ;;
     kerninst-install)
+        _mount_boot
         kernel_install
+        _umount_boot
         ;;
     kerninst-mkinitrd)
+        _mount_boot
         make_initrd
+        _umount_boot
         ;;
     kerninst-updatebm)
+        _mount_boot
         update_bootmanager
+        _umount_boot
         ;;
     kerninst-clean)
+        _mount_boot
         clean
+        _umount_boot
         ;;
     *)
         kerror "Invalid executable name."
