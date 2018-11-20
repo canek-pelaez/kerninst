@@ -93,16 +93,25 @@ function _bootsubdir() {
 }
 
 # Check for a mounted /boot dir, and tries to mount it if specified by the user
-BOOT_SUBDIR=$(_bootsubdir)
-if [ ! -d "${BOOT_SUBDIR}" ]; then
-    if [ "${MOUNT_BOOT}" == "yes" ]; then
-        kinfo "Mounting /boot..."
-        mount /boot || die
+function _mount_boot() {
+    BOOT_SUBDIR=$(_bootsubdir)
+    if [ ! -d "${BOOT_SUBDIR}" ]; then
+        if [ "${MOUNT_BOOT}" == "yes" ]; then
+            kinfo "Mounting /boot..."
+            /bin/mount /boot || die
+        fi
     fi
-fi
-if [ ! -d "${BOOT_SUBDIR}" ]; then
-    kerror "${BOOT_MANAGER^} is not installed or /boot is not mounted."
-fi
+    if [ ! -d "${BOOT_SUBDIR}" ]; then
+        kerror "${BOOT_MANAGER^} is not installed or /boot is not mounted."
+    fi
+}
+
+# Umounts /boot
+function _umount_boot() {
+    kinfo "Unmounting /boot..."
+    /bin/umount /boot || die
+
+}
 
 # die function
 function die() {
@@ -194,6 +203,7 @@ function _install_modules() {
 # Installs the kernel files and modules
 function kernel_install() {
     _delete_kernel_files
+    _mount_boot
     case "${BOOT_MANAGER}" in
         grub)
             _kernel_install_grub
@@ -202,6 +212,7 @@ function kernel_install() {
             _kernel_install_bootctl
             ;;
     esac
+    _umount_boot
     _install_modules
 }
 
