@@ -226,18 +226,6 @@ function _initrd_location() {
     esac
 }
 
-# Returns the correct intel-ucode initramfs location
-function _intel_ucode_location() {
-    case "${BOOT_MANAGER}" in
-        grub)
-            echo "/boot/intel-ucode-${KERNEL_VERSION}"
-            ;;
-        bootctl)
-            echo "/boot/${MACHINE_ID}/${KERNEL_VERSION}/intel-ucode"
-            ;;
-    esac
-}
-
 # Creates the initrd
 function make_initrd() {
     if [ "${MODULES_REBUILD}" == "yes" ]; then
@@ -286,7 +274,6 @@ function _update_bootmanager_bootctl() {
     ENTRY="/boot/loader/entries/${MACHINE_ID}-${KERNEL_VERSION}.conf"
     KERNEL="/${MACHINE_ID}/${KERNEL_VERSION}/kernel"
     INITRD="/${MACHINE_ID}/${KERNEL_VERSION}/initrd"
-    INTEL_UCODE="/${MACHINE_ID}/${KERNEL_VERSION}/intel-ucode"
 
     /usr/bin/printf "title        %s\n" "${BOOTCTL_TITLE}"         >  ${ENTRY}
     /usr/bin/printf "version      %s\n" "${KERNEL_VERSION}"      >> ${ENTRY}
@@ -333,7 +320,6 @@ done
 function _delete_other_files_grub() {
     for FILE in /boot/{config,initrd,System.map,vmlinuz}-*; do
         if [ "${FILE}" == "/boot/config-${KERNEL_VERSION}" ] ||
-               [ "${FILE}" == "/boot/intel-ucode-${KERNEL_VERSION}" ] ||
                [ "${FILE}" == "/boot/initrd-${KERNEL_VERSION}" ] ||
                [ "${FILE}" == "/boot/System.map-${KERNEL_VERSION}" ] ||
                [ "${FILE}" == "/boot/vmlinuz-${KERNEL_VERSION}" ]; then
