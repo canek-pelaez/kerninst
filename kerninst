@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright © 2016-2017 Canek Peláez Valdés
+# Copyright © 2016-2019 Canek Peláez Valdés
 
 # Kerninst is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software
@@ -68,7 +68,7 @@ if [ ! -d "/usr/src/${KERNEL_DIR}" ] || [ ! -f "/usr/src/${KERNEL_DIR}/Makefile"
 fi
 
 # Get kernel version from symbolic link
-KERNEL_VERSION=$(readlink /usr/src/linux | sed "s/^linux-//g")
+KERNEL_VERSION=$(readlink "/usr/src/linux" | sed "s/^linux-//g")
 
 # Check for a valid kernel version
 if [ "${KERNEL_VERSION}" == "" ] || [[ "${KERNEL_VERSION}" =~ \ |\' ]]; then
