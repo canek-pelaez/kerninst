@@ -45,20 +45,20 @@ function kinfo() {
 }
 
 # Log file
-LOGFILE=/var/log/kerninst.log
+LOGFILE="/var/log/kerninst.log"
 
 # Delete old log file
 /bin/rm -f "${LOGFILE}"
 
 # Chech for kernel directory symbolic link
-if [ ! -L /usr/src/linux ]; then
+if [ ! -L "/usr/src/linux" ]; then
     kerror "The symbolic link /usr/src/linux does not exists."
 fi
 
 # Kernel directory
-KERNEL_DIR=$(readlink /usr/src/linux)
+KERNEL_DIR=$(readlink "/usr/src/linux")
 # Machine ID
-MACHINE_ID=$(cat /etc/machine-id)
+MACHINE_ID=$(cat "/etc/machine-id")
 
 # Check that the kernel directory is valid
 if [ ! -d "/usr/src/${KERNEL_DIR}" ] || [ ! -f "/usr/src/${KERNEL_DIR}/Makefile" ]; then
@@ -353,6 +353,14 @@ function _delete_other_files_bootctl() {
     done
 }
 
+# There is a new kernel configuration
+function new_config() {
+    if [ ! -f "/usr/src/${KERNEL_DIR}/.config" ]; then
+        kerror "No kernel config"
+    fi
+    /bin/cp -f "/usr/src/${KERNEL_DIR}/.config" "${KERNEL_CONFIG}"
+}
+
 # Clean files from other kernel versions
 function clean() {
     for DIR in /usr/src/linux-* /lib/modules/*; do
@@ -397,6 +405,9 @@ case "${EXEC_NAME}" in
         ;;
     kerninst-updatebm)
         update_bootmanager
+        ;;
+    kerninst-newconfig)
+        new_config
         ;;
     kerninst-clean)
         clean
