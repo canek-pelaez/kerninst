@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright © 2016-2019 Canek Peláez Valdés
+# Copyright © 2016-2020 Canek Peláez Valdés
 
 # Kerninst is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software
@@ -108,9 +108,10 @@ function _mount_boot() {
 
 # Umounts /boot
 function _umount_boot() {
-    kinfo "Unmounting /boot..."
-    /bin/umount /boot || die
-
+    if [ "${MOUNT_BOOT}" == "yes" ]; then
+        kinfo "Unmounting /boot..."
+        /bin/umount /boot || die
+    fi
 }
 
 # die function
