@@ -209,7 +209,9 @@ function kernel_install() {
             _kernel_install_grub
             ;;
         bootctl)
-            _kernel_install_bootctl
+            if [ "${UNIFIED_IMAGE}" != "yes" ]; then
+                _kernel_install_bootctl
+            fi
             ;;
     esac
     _install_modules
@@ -222,7 +224,11 @@ function _initrd_location() {
             echo "/boot/initrd-${KERNEL_VERSION}"
             ;;
         bootctl)
-            echo "/boot/${MACHINE_ID}/${KERNEL_VERSION}/initrd"
+            if [ "${UNIFIED_IMAGE}" == "yes" ]; then
+                echo "/tmp/initrd-${MACHINE_ID}-${KERNEL_VERSION}"
+            else
+                echo "/boot/${MACHINE_ID}/${KERNEL_VERSION}/initrd"
+            fi
             ;;
     esac
 }
@@ -284,6 +290,45 @@ function _update_bootmanager_bootctl() {
     /usr/bin/printf "options      %s\n" "${KERNEL_COMMAND_LINE}" >> ${ENTRY}
 }
 
+# Creates the kernel command line file
+function _create_cmdline() {
+    CMDP="/tmp/kernel-command-line.txt"
+    /usr/bin/printf "%s\n" "${KERNEL_COMMAND_LINE}" > ${CMDP}
+    echo "${CMDP}"
+}
+
+# Updates bootctl
+function _update_bootmanager_bootctl_unified() {
+    kinfo "Updating Bootctl unified image..."
+
+    OSREL="/etc/os-release"
+    if [ ! -f "${OSREL}" ]; then
+        kerror "${OSREL} missing"
+    fi
+    CMDP=$(_create_cmdline)
+    ARCH=$(arch)
+    KERNEL="/usr/src/${KERNEL_DIR}/arch/${ARCH}/boot/bzImage"
+    INITRD=$(_initrd_location)
+    STUB=$(find "/usr/lib/systemd/boot" -name "*.stub")
+    EFI_LINUX="/boot/EFI/Linux"
+    if [ ! -d "${EFI_LINUX}" ]; then
+        mkdir -p "${EFI_LINUX}"
+    fi
+    IMAGE="${EFI_LINUX}/linux-${KERNEL_VERSION}-gentoo-${MACHINE_ID}.efi"
+
+    OBJPRM=( --add-section   .osrel="${OSREL}"  --change-section-vma   .osrel=0x0020000)
+    OBJPRM+=(--add-section .cmdline="${CMDP}"   --change-section-vma .cmdline=0x0030000)
+    if [ "${SPLASH}" != "" ] && [ ! -f "${SPLASH}" ]; then
+        OBJPRM+=(--add-section  .splash="${SPLASH}" --change-section-vma  .splash=0x0040000)
+    fi
+    OBJPRM+=(--add-section   .linux="${KERNEL}" --change-section-vma   .linux=0x2000000)
+    OBJPRM+=(--add-section  .initrd="${INITRD}" --change-section-vma  .initrd=0x3000000)
+
+    /usr/bin/objcopy ${OBJPRM[@]} "${STUB}" "${IMAGE}"
+    /bin/rm -f "${INITRD}"
+    /bin/rm -f "${CMDP}"
+}
+
 # Updates the boot manager
 function update_bootmanager() {
     case "${BOOT_MANAGER}" in
@@ -291,7 +336,11 @@ function update_bootmanager() {
             _update_bootmanager_grub
             ;;
         bootctl)
-            _update_bootmanager_bootctl
+            if [ "${UNIFIED_IMAGE}" == "yes" ]; then
+                _update_bootmanager_bootctl_unified
+            else
+                _update_bootmanager_bootctl
+            fi
             ;;
     esac
 }
@@ -396,17 +445,26 @@ case "${EXEC_NAME}" in
         kernel_compile
         ;;
     kerninst-install)
+        if [ "${UNIFIED_IMAGE}" == "yes"]; then
+            kerror "Unified kernel image selected; the kernel will not be installed"
+        fi
         _mount_boot
         kernel_install
         _umount_boot
         ;;
     kerninst-mkinitrd)
+        if [ "${UNIFIED_IMAGE}" == "yes"]; then
+            kerror "Unified kernel image selected; the initrd will not be created"
+        fi
         _mount_boot
         make_initrd
         _umount_boot
         ;;
     kerninst-updatebm)
         _mount_boot
+        if [ "${UNIFIED_IMAGE}" == "yes"]; then
+            make_initrd
+        fi
         update_bootmanager
         _umount_boot
         ;;
