@@ -159,6 +159,13 @@ function _delete_kernel_files_bootctl() {
     /bin/rm -f "/boot/loader/entries/${MACHINE_ID}-${KERNEL_VERSION}.conf" &>> "${LOGFILE}" || die
 }
 
+# Deletes the kernel version files in Bootctl
+function _delete_kernel_files_bootctl_unified() {
+    kinfo "Deleting kernel files with version ${KERNEL_VERSION} from /boot..."
+    EFI_LINUX="/boot/EFI/Linux"
+    /bin/rm -rf "${EFI_LINUX}/linux-${KERNEL_VERSION}-${MACHINE_ID}.efi" &>> "${LOGFILE}" || die
+}
+
 # Deletes the kernel version modules
 function _delete_lib_modules() {
     kinfo "Deleting kernel files with version ${KERNEL_VERSION} from /lib/modules..."
@@ -172,7 +179,11 @@ function _delete_kernel_files() {
             _delete_kernel_files_grub
             ;;
         bootctl)
-            _delete_kernel_files_bootctl
+            if [ "${UNIFIED_IMAGE}" == "yes" ]; then
+                _delete_kernel_files_bootctl_unified
+            else
+                _delete_kernel_files_bootctl
+            fi
             ;;
     esac
     _delete_lib_modules
@@ -314,19 +325,21 @@ function _update_bootmanager_bootctl_unified() {
     if [ ! -d "${EFI_LINUX}" ]; then
         mkdir -p "${EFI_LINUX}"
     fi
-    IMAGE="${EFI_LINUX}/linux-${KERNEL_VERSION}-gentoo-${MACHINE_ID}.efi"
+    IMAGE="${EFI_LINUX}/linux-${KERNEL_VERSION}-${MACHINE_ID}.efi"
 
     OBJPRM=( --add-section   .osrel="${OSREL}"  --change-section-vma   .osrel=0x0020000)
     OBJPRM+=(--add-section .cmdline="${CMDP}"   --change-section-vma .cmdline=0x0030000)
-    if [ "${SPLASH}" != "" ] && [ ! -f "${SPLASH}" ]; then
+    if [ -f "${SPLASH}" ]; then
         OBJPRM+=(--add-section  .splash="${SPLASH}" --change-section-vma  .splash=0x0040000)
     fi
     OBJPRM+=(--add-section   .linux="${KERNEL}" --change-section-vma   .linux=0x2000000)
     OBJPRM+=(--add-section  .initrd="${INITRD}" --change-section-vma  .initrd=0x3000000)
 
+    kinfo "Creating unified kernel image..."
     /usr/bin/objcopy ${OBJPRM[@]} "${STUB}" "${IMAGE}"
     /bin/rm -f "${INITRD}"
     /bin/rm -f "${CMDP}"
+    kinfo "The unified kernel image was created in ${IMAGE}."
 }
 
 # Updates the boot manager
@@ -380,6 +393,18 @@ function _delete_other_files_grub() {
     done
 }
 
+# Delete other unified kernel images in bootctl
+function _delete_other_files_bootctl_unified() {
+    for FILE in /boot/EFI/Linux/*.efi; do
+        VERSION=$(basename "${FILE}" | cut -d "-" -f 2- | sed "s/-${MACHINE_ID}\.img//g")
+        if [ "${VERSION}" == "${KERNEL_VERSION}" ]; then
+            continue
+        fi
+        kinfo "Deleting ${FILE}..."
+        /bin/rm -rf "${FILE}" &>> "${LOGFILE}" || die
+    done
+}
+
 # Delete other (not current version) bootctl files
 function _delete_other_files_bootctl() {
     for DIR in /boot/${MACHINE_ID}/*; do
@@ -426,7 +451,11 @@ function clean() {
             _delete_other_files_grub
             ;;
         bootctl)
-            _delete_other_files_bootctl
+            if [ "${UNIFIED_IMAGE}" == "yes" ]; then
+                _delete_other_files_bootctl_unified
+            else
+                _delete_other_files_bootctl
+            fi
             ;;
     esac
 }
@@ -445,7 +474,7 @@ case "${EXEC_NAME}" in
         kernel_compile
         ;;
     kerninst-install)
-        if [ "${UNIFIED_IMAGE}" == "yes"]; then
+        if [ "${UNIFIED_IMAGE}" == "yes" ]; then
             kerror "Unified kernel image selected; the kernel will not be installed"
         fi
         _mount_boot
@@ -453,7 +482,7 @@ case "${EXEC_NAME}" in
         _umount_boot
         ;;
     kerninst-mkinitrd)
-        if [ "${UNIFIED_IMAGE}" == "yes"]; then
+        if [ "${UNIFIED_IMAGE}" == "yes" ]; then
             kerror "Unified kernel image selected; the initrd will not be created"
         fi
         _mount_boot
@@ -462,7 +491,7 @@ case "${EXEC_NAME}" in
         ;;
     kerninst-updatebm)
         _mount_boot
-        if [ "${UNIFIED_IMAGE}" == "yes"]; then
+        if [ "${UNIFIED_IMAGE}" == "yes" ]; then
             make_initrd
         fi
         update_bootmanager
