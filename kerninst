@@ -21,6 +21,25 @@
 # initrd created with dracut, and configure either Grub or Bootctl to use the
 # new kernel and associated initrd.
 
+BASENAME="/usr/bin/basename"
+CHMOD="/bin/chmod"
+CP="/bin/cp"
+DRACUT="/usr/bin/dracut"
+ECHO="/bin/echo"
+EMERGE="/usr/bin/emerge"
+GREP="/bin/grep"
+GRUB_MKCONFIG="/usr/sbin/grub-mkconfig"
+MAKE="/usr/bin/make"
+MKDIR="/bin/mkdir"
+MOUNT="/bin/mount"
+MOUNTPOINT="/bin/mountpoint"
+OBJCOPY="/usr/bin/objcopy"
+PRINTF="/usr/bin/printf"
+READLINK="/usr/bin/readlink"
+RM="/bin/rm"
+UMOUNT="/bin/umount"
+YES="/bin/yes"
+
 # Pretty messages
 . /etc/init.d/functions.sh
 # Configuration
@@ -28,7 +47,7 @@
 
 # Set the terminal title
 function termtitle() {
-    echo -ne "\x1b]0;${1}\x07" > /dev/stderr
+    "${ECHO}" -ne "\x1b]0;${1}\x07" > /dev/stderr
 }
 
 # Print an error and exit
@@ -48,7 +67,7 @@ function kinfo() {
 LOGFILE="/var/log/kerninst.log"
 
 # Delete old log file
-/bin/rm -f "${LOGFILE}"
+"${RM}" -f "${LOGFILE}"
 
 # Chech for kernel directory symbolic link
 if [ ! -L "/usr/src/linux" ]; then
@@ -56,19 +75,19 @@ if [ ! -L "/usr/src/linux" ]; then
 fi
 
 # Kernel directory
-KERNEL_DIR=$(readlink "/usr/src/linux")
+KERNEL_DIR=$("${READLINK}" "/usr/src/linux")
 # Machine ID
 MACHINE_ID=$(cat "/etc/machine-id")
 
 # Check that the kernel directory is valid
 if [ ! -d "/usr/src/${KERNEL_DIR}" ] || [ ! -f "/usr/src/${KERNEL_DIR}/Makefile" ]; then
-    if [ ! grep -q KBUILD "/usr/src/${KERNEL_DIR}/Makefile" ]; then
+    if [ ! "${GREP}" -q KBUILD "/usr/src/${KERNEL_DIR}/Makefile" ]; then
         kerror "The file /usr/src/${KERNEL_DIR} is not a valid kernel directory."
     fi
 fi
 
 # Get kernel version from symbolic link
-KERNEL_VERSION=$(readlink "/usr/src/linux" | sed "s/^linux-//g")
+KERNEL_VERSION=$("${READLINK}" "/usr/src/linux" | sed "s/^linux-//g")
 
 # Check for a valid kernel version
 if [ "${KERNEL_VERSION}" == "" ] || [[ "${KERNEL_VERSION}" =~ \ |\' ]]; then
@@ -84,10 +103,10 @@ fi
 function _bootsubdir() {
     case "${BOOT_MANAGER}" in
         grub)
-            echo "/boot/grub"
+            "${ECHO}" "/boot/grub"
             ;;
         bootctl)
-            echo "/boot/EFI"
+            "${ECHO}" "/boot/EFI"
             ;;
     esac
 }
@@ -98,7 +117,7 @@ function _mount_boot() {
     if [ ! -d "${BOOT_SUBDIR}" ]; then
         if [ "${MOUNT_BOOT}" == "yes" ]; then
             kinfo "Mounting /boot..."
-            /bin/mount /boot || die
+            "${MOUNT}" /boot || die
         fi
     fi
     if [ ! -d "${BOOT_SUBDIR}" ]; then
@@ -110,7 +129,7 @@ function _mount_boot() {
 function _umount_boot() {
     if [ "${MOUNT_BOOT}" == "yes" ]; then
         kinfo "Unmounting /boot..."
-        /bin/umount /boot || die
+        "${UMOUNT}" /boot || die
     fi
 }
 
@@ -123,53 +142,53 @@ function die() {
 # the kernel
 function kernel_compile() {
     kinfo "Copying kernel configuration from ${KERNEL_CONFIG}..."
-    /bin/cp -f "${KERNEL_CONFIG}" /usr/src/linux/.config &>> "${LOGFILE}" || die
+    "${CP}" -f "${KERNEL_CONFIG}" /usr/src/linux/.config &>> "${LOGFILE}" || die
 
     kinfo "Configuring kernel..."
-    /bin/yes "" | make -C /usr/src/linux oldconfig &>> "${LOGFILE}" || die
+    "${YES}" "" | "${MAKE}" -C /usr/src/linux oldconfig &>> "${LOGFILE}" || die
 
     if [ "${UPDATE_KERNEL_CONFIG}" == "yes" ]; then
         kinfo "Updating kernel config..."
-        /bin/cp -f /usr/src/linux/.config "${KERNEL_CONFIG}" || die
+        "${CP}" -f /usr/src/linux/.config "${KERNEL_CONFIG}" || die
     fi
 
     SYNC_CHECK="/usr/src/linux/tools/objtool/sync-check.sh"
     if [ ! -x ${SYNC_CHECK} ]; then
         kinfo "Making sync-check.sh executable..."
-        /bin/chmod 755 ${SYNC_CHECK} || die
+        "${CHMOD}" 755 ${SYNC_CHECK} || die
     fi
 
     kinfo "Compiling kernel..."
-    /usr/bin/make ${KERNEL_MAKEOPTS} -C /usr/src/linux &>> "${LOGFILE}" || die
+    "${MAKE}" ${KERNEL_MAKEOPTS} -C /usr/src/linux &>> "${LOGFILE}" || die
 }
 
 # Deletes the kernel version files in Grub
 function _delete_kernel_files_grub() {
     kinfo "Deleting kernel files with version ${KERNEL_VERSION} from /boot..."
-    /bin/rm -f "/boot/config-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
-    /bin/rm -f "/boot/initrd-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
-    /bin/rm -f "/boot/System.map-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
-    /bin/rm -f "/boot/vmlinuz-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
+    "${RM}" -f "/boot/config-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
+    "${RM}" -f "/boot/initrd-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
+    "${RM}" -f "/boot/System.map-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
+    "${RM}" -f "/boot/vmlinuz-${KERNEL_VERSION}" &>> "${LOGFILE}" || die
 }
 
 # Deletes the kernel version files in Bootctl
 function _delete_kernel_files_bootctl() {
     kinfo "Deleting kernel files with version ${KERNEL_VERSION} from /boot..."
-    /bin/rm -rf "/boot/${MACHINE_ID}/${KERNEL_VERSION}" &>> "${LOGFILE}" || die
-    /bin/rm -f "/boot/loader/entries/${MACHINE_ID}-${KERNEL_VERSION}.conf" &>> "${LOGFILE}" || die
+    "${RM}" -rf "/boot/${MACHINE_ID}/${KERNEL_VERSION}" &>> "${LOGFILE}" || die
+    "${RM}" -f "/boot/loader/entries/${MACHINE_ID}-${KERNEL_VERSION}.conf" &>> "${LOGFILE}" || die
 }
 
 # Deletes the kernel version files in Bootctl
 function _delete_kernel_files_bootctl_unified() {
     kinfo "Deleting kernel files with version ${KERNEL_VERSION} from /boot..."
     EFI_LINUX="/boot/EFI/Linux"
-    /bin/rm -rf "${EFI_LINUX}/linux-${KERNEL_VERSION}-${MACHINE_ID}.efi" &>> "${LOGFILE}" || die
+    "${RM}" -rf "${EFI_LINUX}/linux-${KERNEL_VERSION}-${MACHINE_ID}.efi" &>> "${LOGFILE}" || die
 }
 
 # Deletes the kernel version modules
 function _delete_lib_modules() {
     kinfo "Deleting kernel files with version ${KERNEL_VERSION} from /lib/modules..."
-    /bin/rm -rf "/lib/modules/${KERNEL_VERSION}" &>> "${LOGFILE}" || die
+    "${RM}" -rf "/lib/modules/${KERNEL_VERSION}" &>> "${LOGFILE}" || die
 }
 
 # Deletes the kernel version files and modules
@@ -192,7 +211,7 @@ function _delete_kernel_files() {
 # Installs the kernel files for Grub
 function _kernel_install_grub() {
     kinfo "Installing kernel..."
-    make -C /usr/src/linux install &>> "${LOGFILE}" || die
+    "${MAKE}" -C /usr/src/linux install &>> "${LOGFILE}" || die
     kinfo "The kernel was installed into /boot/vmlinuz-${KERNEL_VERSION}."
 }
 
@@ -201,7 +220,7 @@ function _kernel_install_bootctl() {
     LOCATION="/boot/${MACHINE_ID}/${KERNEL_VERSION}/kernel"
 
     kinfo "Installing kernel..."
-    /bin/mkdir -p "/boot/${MACHINE_ID}/${KERNEL_VERSION}" &>> "${LOGFILE}" || die
+    "${MKDIR}" -p "/boot/${MACHINE_ID}/${KERNEL_VERSION}" &>> "${LOGFILE}" || die
     cp "/usr/src/linux/arch/x86/boot/bzImage" "${LOCATION}" &>> "${LOGFILE}" || die
     kinfo "The kernel was installed into ${LOCATION}."
 }
@@ -209,7 +228,7 @@ function _kernel_install_bootctl() {
 # Installs the modules
 function _install_modules() {
     kinfo "Installing modules..."
-    make -C /usr/src/linux modules_install &>> "${LOGFILE}" || die
+    "${MAKE}" -C /usr/src/linux modules_install &>> "${LOGFILE}" || die
 }
 
 # Installs the kernel files and modules
@@ -232,13 +251,13 @@ function kernel_install() {
 function _initrd_location() {
     case "${BOOT_MANAGER}" in
         grub)
-            echo "/boot/initrd-${KERNEL_VERSION}"
+            "${ECHO}" "/boot/initrd-${KERNEL_VERSION}"
             ;;
         bootctl)
             if [ "${UNIFIED_IMAGE}" == "yes" ]; then
-                echo "/tmp/initrd-${MACHINE_ID}-${KERNEL_VERSION}"
+                "${ECHO}" "/tmp/initrd-${MACHINE_ID}-${KERNEL_VERSION}"
             else
-                echo "/boot/${MACHINE_ID}/${KERNEL_VERSION}/initrd"
+                "${ECHO}" "/boot/${MACHINE_ID}/${KERNEL_VERSION}/initrd"
             fi
             ;;
     esac
@@ -248,7 +267,7 @@ function _initrd_location() {
 function make_initrd() {
     if [ "${MODULES_REBUILD}" == "yes" ]; then
         kinfo "Recompiling modules..."
-        /usr/bin/emerge -v @module-rebuild &>> "${LOGFILE}" || die
+        "${EMERGE}" -v @module-rebuild &>> "${LOGFILE}" || die
     fi
 
     LOCATION=$(_initrd_location)
@@ -261,13 +280,13 @@ function make_initrd() {
             INCLUDED+=" ${i}"
         done
 
-        for i in $(echo ${INCLUDES}); do
+        for i in $("${ECHO}" ${INCLUDES}); do
             INCLUDED+=" ${i}"
         done
 
-        /usr/bin/dracut -f "${INCLUDED}" "${LOCATION}" "${KERNEL_VERSION}" &>> "${LOGFILE}" || die
+        "${DRACUT}" -f "${INCLUDED}" "${LOCATION}" "${KERNEL_VERSION}" &>> "${LOGFILE}" || die
     else
-        /usr/bin/dracut -f "${LOCATION}" "${KERNEL_VERSION}" &>> "${LOGFILE}" || die
+        "${DRACUT}" -f "${LOCATION}" "${KERNEL_VERSION}" &>> "${LOGFILE}" || die
     fi
     kinfo "The initrd was installed into ${LOCATION}."
 }
@@ -277,9 +296,9 @@ function _update_bootmanager_grub() {
     kinfo "Updating GRUB..."
     if [ "${MOUNT_BOOT_EFI}" == "yes" ]; then
         kinfo "Mounting EFI boot directory..."
-        /bin/mountpoint -q  /boot/efi || /bin/mount /boot/efi
+        "${MOUNTPOINT}" -q  /boot/efi || "${MOUNT}" /boot/efi
     fi
-    /usr/sbin/grub-mkconfig -o "${GRUB_CONFIG_FILE}" &>> "${LOGFILE}" || die
+    "${GRUB_MKCONFIG}" -o "${GRUB_CONFIG_FILE}" &>> "${LOGFILE}" || die
 }
 
 # Updates bootctl
@@ -293,19 +312,19 @@ function _update_bootmanager_bootctl() {
     KERNEL="/${MACHINE_ID}/${KERNEL_VERSION}/kernel"
     INITRD="/${MACHINE_ID}/${KERNEL_VERSION}/initrd"
 
-    /usr/bin/printf "title        %s\n" "${BOOTCTL_TITLE}"         >  ${ENTRY}
-    /usr/bin/printf "version      %s\n" "${KERNEL_VERSION}"      >> ${ENTRY}
-    /usr/bin/printf "machine-id   %s\n" "${MACHINE_ID}"         >> ${ENTRY}
-    /usr/bin/printf "linux        %s\n" "${KERNEL}"                >> ${ENTRY}
-    /usr/bin/printf "initrd       %s\n" "${INITRD}"               >> ${ENTRY}
-    /usr/bin/printf "options      %s\n" "${KERNEL_COMMAND_LINE}" >> ${ENTRY}
+    "${PRINTF}" "title        %s\n" "${BOOTCTL_TITLE}"        > ${ENTRY}
+    "${PRINTF}" "version      %s\n" "${KERNEL_VERSION}"      >> ${ENTRY}
+    "${PRINTF}" "machine-id   %s\n" "${MACHINE_ID}"          >> ${ENTRY}
+    "${PRINTF}" "linux        %s\n" "${KERNEL}"              >> ${ENTRY}
+    "${PRINTF}" "initrd       %s\n" "${INITRD}"              >> ${ENTRY}
+    "${PRINTF}" "options      %s\n" "${KERNEL_COMMAND_LINE}" >> ${ENTRY}
 }
 
 # Creates the kernel command line file
 function _create_cmdline() {
     CMDP="/tmp/kernel-command-line.txt"
-    /usr/bin/printf "%s\n" "${KERNEL_COMMAND_LINE}" > ${CMDP}
-    echo "${CMDP}"
+    "${PRINTF}" "%s\n" "${KERNEL_COMMAND_LINE}" > ${CMDP}
+    "${ECHO}" "${CMDP}"
 }
 
 # Updates bootctl
@@ -323,7 +342,7 @@ function _update_bootmanager_bootctl_unified() {
     STUB=$(find "/usr/lib/systemd/boot" -name "*.stub")
     EFI_LINUX="/boot/EFI/Linux"
     if [ ! -d "${EFI_LINUX}" ]; then
-        mkdir -p "${EFI_LINUX}"
+        "${MKDIR}" -p "${EFI_LINUX}"
     fi
     IMAGE="${EFI_LINUX}/linux-${KERNEL_VERSION}-${MACHINE_ID}.efi"
 
@@ -336,9 +355,10 @@ function _update_bootmanager_bootctl_unified() {
     OBJPRM+=(--add-section  .initrd="${INITRD}" --change-section-vma  .initrd=0x3000000)
 
     kinfo "Creating unified kernel image..."
-    /usr/bin/objcopy ${OBJPRM[@]} "${STUB}" "${IMAGE}"
-    /bin/rm -f "${INITRD}"
-    /bin/rm -f "${CMDP}"
+    "${OBJCOPY}" ${OBJPRM[@]} "${STUB}" "${IMAGE}"
+    kinfo "Removing initrd in ${INITRD}..."
+    "${RM}" -f "${INITRD}"
+    "${RM}" -f "${CMDP}"
     kinfo "The unified kernel image was created in ${IMAGE}."
 }
 
@@ -359,7 +379,7 @@ function update_bootmanager() {
 }
 
 # Get the exec name
-EXEC_NAME=$(/usr/bin/basename "$0")
+EXEC_NAME=$("${BASENAME}" "$0")
 
 # Override configuration file with command line flags
 for ARG in "$@"; do
@@ -389,19 +409,19 @@ function _delete_other_files_grub() {
             continue
         fi
         kinfo "Deleting ${FILE}..."
-        /bin/rm -f "${FILE}" &>> "${LOGFILE}" || die
+        "${RM}" -f "${FILE}" &>> "${LOGFILE}" || die
     done
 }
 
 # Delete other unified kernel images in bootctl
 function _delete_other_files_bootctl_unified() {
     for FILE in /boot/EFI/Linux/*.efi; do
-        VERSION=$(basename "${FILE}" | cut -d "-" -f 2- | sed "s/-${MACHINE_ID}\.img//g")
+        VERSION=$("${BASENAME}" "${FILE}" | cut -d "-" -f 2- | sed "s/-${MACHINE_ID}\.img//g")
         if [ "${VERSION}" == "${KERNEL_VERSION}" ]; then
             continue
         fi
         kinfo "Deleting ${FILE}..."
-        /bin/rm -rf "${FILE}" &>> "${LOGFILE}" || die
+        "${RM}" -rf "${FILE}" &>> "${LOGFILE}" || die
     done
 }
 
@@ -412,14 +432,14 @@ function _delete_other_files_bootctl() {
             continue
         fi
         kinfo "Deleting ${DIR}..."
-        /bin/rm -rf "${DIR}" &>> "${LOGFILE}" || die
+        "${RM}" -rf "${DIR}" &>> "${LOGFILE}" || die
     done
     for FILE in /boot/loader/entries/*; do
         if [ "${FILE}" == "/boot/loader/entries/${MACHINE_ID}-${KERNEL_VERSION}.conf" ]; then
             continue
         fi
         kinfo "Deleting ${FILE}..."
-        /bin/rm -f "${FILE}" &>> "${LOGFILE}" || die
+        "${RM}" -f "${FILE}" &>> "${LOGFILE}" || die
     done
 }
 
@@ -428,7 +448,7 @@ function new_config() {
     if [ ! -f "/usr/src/${KERNEL_DIR}/.config" ]; then
         kerror "No kernel config"
     fi
-    /bin/cp -f "/usr/src/${KERNEL_DIR}/.config" "${KERNEL_CONFIG}"
+    "${CP}" -f "/usr/src/${KERNEL_DIR}/.config" "${KERNEL_CONFIG}"
 }
 
 # Clean files from other kernel versions
@@ -444,7 +464,7 @@ function clean() {
             continue
         fi
         kinfo "Deleting ${DIR}..."
-        /bin/rm -rf "${DIR}" &>> "${LOGFILE}" || die
+        "${RM}" -rf "${DIR}" &>> "${LOGFILE}" || die
     done
     case "${BOOT_MANAGER}" in
         grub)
