@@ -416,7 +416,7 @@ function _delete_other_files_grub() {
 # Delete other unified kernel images in bootctl
 function _delete_other_files_bootctl_unified() {
     for FILE in /boot/EFI/Linux/*.efi; do
-        VERSION=$("${BASENAME}" "${FILE}" | cut -d "-" -f 2- | sed "s/-${MACHINE_ID}\.img//g")
+        VERSION=$("${BASENAME}" "${FILE}" | sed "s@linux-@@g" | sed "s@-${MACHINE_ID}\.efi@@g")
         if [ "${VERSION}" == "${KERNEL_VERSION}" ]; then
             continue
         fi
