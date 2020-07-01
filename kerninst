@@ -267,7 +267,7 @@ function _initrd_location() {
 function make_initrd() {
     if [ "${MODULES_REBUILD}" == "yes" ]; then
         kinfo "Recompiling modules..."
-        "${EMERGE}" -v @module-rebuild &>> "${LOGFILE}" || die
+        "${EMERGE}" --nodeps -v "${MODULES_PACKAGES}" &>> "${LOGFILE}" || die
     fi
 
     LOCATION=$(_initrd_location)
