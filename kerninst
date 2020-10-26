@@ -63,6 +63,75 @@ function kinfo() {
     einfo "${1}"
 }
 
+CMD=()
+
+# Override configuration file with command line flags
+for ARG in "$@"; do
+    case "${ARG}" in
+        --modules-rebuild)
+            MODULES_REBUILD="yes"
+            ;;
+        --no-modules-rebuild)
+            MODULES_REBUILD="no"
+            ;;
+        --update-kernel-config)
+            UPDATE_KERNEL_CONFIG="yes"
+            ;;
+        --no-update-kernel-config)
+            UPDATE_KERNEL_CONFIG="no"
+            ;;
+        *)
+            CMD+=("${ARG}")
+            ;;
+    esac
+done
+
+function usage() {
+    USAGE="usage: kerninst [--help] [command]\n"
+    USAGE+="\n"
+    USAGE+="The kerninst commands:\n"
+    USAGE+="\n"
+    USAGE+="   compile\tcompiles the kernel\n"
+    USAGE+="   install\tinstalls the kernel\n"
+    USAGE+="   updatemods\tupdates the kernel modules\n"
+    USAGE+="   mkinitrd\tcreates the initrd image\n"
+    USAGE+="   updatebm\tupdates the boot manager\n"
+    USAGE+="   newconfig\tupdates the kernel configuration\n"
+    USAGE+="   clean\tcleans old kernels and initrd images\n"
+    USAGE+="\n"
+    USAGE+="Without a command, kerninst will run all comands in order.\n"
+    "${PRINTF}" "${USAGE}"
+    if [ "${1}" == "--help" ]; then
+        exit 0
+    fi
+    exit 1
+}
+
+COMMAND=""
+
+# Get the exec name
+EXEC_NAME=$("${BASENAME}" "${0}")
+
+if [ "${#CMD[@]}" == "1" ]; then
+    if [ "${CMD[0]}" != "compile" ] &&
+           [ "${CMD[0]}" != "install" ] &&
+           [ "${CMD[0]}" != "updatemods" ] &&
+           [ "${CMD[0]}" != "mkinitrd" ] &&
+           [ "${CMD[0]}" != "updatebm" ] &&
+           [ "${CMD[0]}" != "newconfig" ] &&
+           [ "${CMD[0]}" != "clean" ]; then
+        usage "${CMD[0]}"
+    else
+        COMMAND="${CMD[0]}"
+    fi
+elif [ "${#CMD[@]}" -gt "1" ]; then
+    kerror "Invalid command ${CMD[0]}"
+fi
+
+if [ "${EXEC_NAME}" != "kerninst" ] && [ "${COMMAND}" != "" ]; then
+    usage "error"
+fi
+
 # Log file
 LOGFILE="/var/log/kerninst.log"
 
@@ -263,13 +332,16 @@ function _initrd_location() {
     esac
 }
 
-# Creates the initrd
-function make_initrd() {
+# Updates the kernel modules
+function rebuild_modules() {
     if [ "${MODULES_REBUILD}" == "yes" ]; then
         kinfo "Recompiling modules..."
-        "${EMERGE}" --nodeps -v "${MODULES_PACKAGES}" &>> "${LOGFILE}" || die
+        "${EMERGE}" --nodeps -1v "${MODULES_PACKAGES}" &>> "${LOGFILE}" || die
     fi
+}
 
+# Creates the initrd
+function make_initrd() {
     LOCATION=$(_initrd_location)
 
     kinfo "Creating initrd..."
@@ -378,27 +450,6 @@ function update_bootmanager() {
     esac
 }
 
-# Get the exec name
-EXEC_NAME=$("${BASENAME}" "$0")
-
-# Override configuration file with command line flags
-for ARG in "$@"; do
-    case "${ARG}" in
-        --modules-rebuild)
-            MODULES_REBUILD="yes"
-            ;;
-        --no-modules-rebuild)
-            MODULES_REBUILD="no"
-            ;;
-        --update-kernel-config)
-            UPDATE_KERNEL_CONFIG="yes"
-            ;;
-        --no-update-kernel-config)
-            UPDATE_KERNEL_CONFIG="no"
-            ;;
-    esac
-done
-
 # Delete other (not current version) grub files
 function _delete_other_files_grub() {
     for FILE in /boot/{config,initrd,System.map,vmlinuz}-*; do
@@ -480,52 +531,82 @@ function clean() {
     esac
 }
 
+function do_all() {
+    _mount_boot
+    kernel_compile
+    kernel_install
+    rebuild_modules
+    make_initrd
+    update_bootmanager
+    _umount_boot
+}
+
+function do_kernel_install() {
+    if [ "${UNIFIED_IMAGE}" == "yes" ]; then
+        kerror "Unified kernel image selected; the kernel will not be installed"
+    fi
+    _mount_boot
+    kernel_install
+    _umount_boot
+}
+
+function do_kernel_updatemods() {
+    if [ "${MODULES_REBUILD}" == "yes" ]; then
+        kerror "Modules rebuilt is turned off; the modules will not be updated"
+    fi
+    rebuild_modules
+}
+
+function do_kerninst_mkinitrd() {
+    if [ "${UNIFIED_IMAGE}" == "yes" ]; then
+        kerror "Unified kernel image selected; the initrd will not be created"
+    fi
+    _mount_boot
+    make_initrd
+    _umount_boot
+}
+
+function do_kerninst_updatebm() {
+    _mount_boot
+    if [ "${UNIFIED_IMAGE}" == "yes" ]; then
+        make_initrd
+    fi
+    update_bootmanager
+    _umount_boot
+}
+
+function do_clean() {
+    _mount_boot
+    clean
+    _umount_boot
+}
+
 # "Main"
-case "${EXEC_NAME}" in
-    kerninst)
-        _mount_boot
-        kernel_compile
-        kernel_install
-        make_initrd
-        update_bootmanager
-        _umount_boot
-        ;;
-    kerninst-compile)
-        kernel_compile
-        ;;
-    kerninst-install)
-        if [ "${UNIFIED_IMAGE}" == "yes" ]; then
-            kerror "Unified kernel image selected; the kernel will not be installed"
-        fi
-        _mount_boot
-        kernel_install
-        _umount_boot
-        ;;
-    kerninst-mkinitrd)
-        if [ "${UNIFIED_IMAGE}" == "yes" ]; then
-            kerror "Unified kernel image selected; the initrd will not be created"
-        fi
-        _mount_boot
-        make_initrd
-        _umount_boot
-        ;;
-    kerninst-updatebm)
-        _mount_boot
-        if [ "${UNIFIED_IMAGE}" == "yes" ]; then
-            make_initrd
-        fi
-        update_bootmanager
-        _umount_boot
-        ;;
-    kerninst-newconfig)
-        new_config
-        ;;
-    kerninst-clean)
-        _mount_boot
-        clean
-        _umount_boot
-        ;;
-    *)
-        kerror "Invalid executable name."
-        ;;
-esac
+if [ "${EXEC_NAME}" == "kerninst" ]; then
+    if [ "${COMMAND}" == "" ]; then
+        do_all
+    else
+        case "${COMMAND}" in
+            compile)     kernel_compile          ;;
+            install)     do_kerninst_install     ;;
+            updatemods)  do_kerninst_updatemods  ;;
+            mkinitrd)    do_kerninst-mkinitrd    ;;
+            updatebm)    do_kerninst_updatebm    ;;
+            newconfig)   new_config              ;;
+            clean)       do_clean                ;;
+            *)           usage ""                ;;
+        esac
+    fi
+else
+    case "${EXEC_NAME}" in
+        kerninst)             do_all                  ;;
+        kerninst-compile)     kernel_compile          ;;
+        kerninst-install)     do_kerninst_install     ;;
+        kerninst-updatemods)  do_kerninst_updatemods  ;;
+        kerninst-mkinitrd)    do_kerninst-mkinitrd    ;;
+        kerninst-updatebm)    do_kerninst_updatebm    ;;
+        kerninst-newconfig)   new_config              ;;
+        kerninst-clean)       do_clean                ;;
+        *)                    usage ""                ;;
+    esac
+fi
