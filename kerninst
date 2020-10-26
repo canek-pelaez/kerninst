@@ -590,7 +590,7 @@ if [ "${EXEC_NAME}" == "kerninst" ]; then
             compile)     kernel_compile          ;;
             install)     do_kerninst_install     ;;
             updatemods)  do_kerninst_updatemods  ;;
-            mkinitrd)    do_kerninst-mkinitrd    ;;
+            mkinitrd)    do_kerninst_mkinitrd    ;;
             updatebm)    do_kerninst_updatebm    ;;
             newconfig)   new_config              ;;
             clean)       do_clean                ;;
@@ -603,7 +603,7 @@ else
         kerninst-compile)     kernel_compile          ;;
         kerninst-install)     do_kerninst_install     ;;
         kerninst-updatemods)  do_kerninst_updatemods  ;;
-        kerninst-mkinitrd)    do_kerninst-mkinitrd    ;;
+        kerninst-mkinitrd)    do_kerninst_mkinitrd    ;;
         kerninst-updatebm)    do_kerninst_updatebm    ;;
         kerninst-newconfig)   new_config              ;;
         kerninst-clean)       do_clean                ;;
