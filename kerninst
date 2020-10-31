@@ -348,7 +348,7 @@ function make_initrd() {
     if [ "${INCLUDES}" != "" ] || [ "${INCLUDE_FIRMWARE}" == "yes" ]; then
         INCLUDED="-I"
 
-        for i in $(find /lib64/firmware -type f); do
+        for i in $(find /lib/firmware -type f); do
             INCLUDED+=" ${i}"
         done
 
