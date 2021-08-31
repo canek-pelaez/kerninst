@@ -19,7 +19,7 @@
 
 # kerninst: Compile and install a kernel in Gentoo. Also, create and install an
 # initrd created with dracut, and configure either Grub or Bootctl to use the
-# new kernel and associated initrd.
+# new kernel and associated initrd. The initrd can be an unified kernel image.
 
 BASENAME="/usr/bin/basename"
 CHMOD="/bin/chmod"
@@ -411,7 +411,7 @@ function _update_bootmanager_bootctl_unified() {
     ARCH=$(arch)
     KERNEL="/usr/src/${KERNEL_DIR}/arch/${ARCH}/boot/bzImage"
     INITRD=$(_initrd_location)
-    STUB=$(find "/usr/lib/systemd/boot" -name "*.stub")
+    STUB=$(find "/usr/lib/systemd/boot" -name "linuxx64.efi.stub")
     EFI_LINUX="/boot/EFI/Linux"
     if [ ! -d "${EFI_LINUX}" ]; then
         "${MKDIR}" -p "${EFI_LINUX}"
